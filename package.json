@@ -2,11 +2,12 @@
   "name": "@tosijs/static-assets",
   "private": true,
   "type": "module",
-  "description": "Mirror source for static.tosijs.net — a shared static-asset CDN for tosijs.net projects.",
+  "description": "Mirror source for cdn.tosijs.net — a shared static-asset CDN for tosijs.net projects.",
   "scripts": {
     "scan": "bun bin/scan-conversions.ts",
     "convert": "bun bin/convert.ts",
     "build": "bun bin/convert.ts && bun bin/mirror.ts",
-    "deploy": "bun bin/convert.ts && bun bin/mirror.ts && firebase deploy --only hosting"
+    "deploy": "bun run build && wrangler pages deploy public --project-name cdn-tosijs",
+    "deploy:firebase": "bun run build && firebase deploy --only hosting"
   }
 }

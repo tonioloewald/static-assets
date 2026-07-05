@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-Mirror source for **static.tosijs.net** — a shared static-asset CDN (3D models,
+Mirror source for **cdn.tosijs.net** — a shared static-asset CDN (3D models,
 textures, audio, …) for tosijs.net projects. It keeps heavy binaries OUT of every
 consuming repo (e.g. `tosijs-3d`), which reference assets by URL instead. One repo
 holds the assets + the tooling to publish them; everything else just links in.
@@ -19,11 +19,16 @@ This file is about the *tooling*.
   each pack's `metadata.json` (dry-run; add `--write` to apply). See Conversion below.
 - `bun run convert` — execute those specs via Blender (cached) → `derived/`.
 - `bun run build` — `convert`, then stage `assets/` + `derived/` → `public/` and
-  regenerate `firebase.json`.
-- `bun run deploy` — build, then `firebase deploy --only hosting`.
+  regenerate the host config (`public/_headers` + `public/robots.txt` + `firebase.json`).
+- `bun run deploy` — build, then `wrangler pages deploy public` (**Cloudflare Pages**).
+- `bun run deploy:firebase` — build, then `firebase deploy --only hosting` (fallback).
 
-Deploying needs the Firebase CLI and a selected project (`firebase use <project>`).
-The whole publish is driven by `metadata.json` — you rarely touch anything else.
+**Host is a deploy/DNS choice, not a rebuild.** `public/` is identical either way;
+`mirror.ts` emits both a Cloudflare `_headers` file and a `firebase.json` from the same
+metadata rules. Cloudflare Pages is primary (free egress suits a public asset CDN);
+Firebase Hosting also works (billed egress beyond a small free tier). Deploying needs
+the respective CLI logged in (`wrangler login`, or `firebase use <project>`). The whole
+publish is driven by `metadata.json` — you rarely touch anything else.
 
 ## Layout
 
@@ -33,7 +38,9 @@ The whole publish is driven by `metadata.json` — you rarely touch anything els
 | `assets/**/metadata.json` | Per-directory config (attribution + filtering). **Committed.** |
 | `assets/**` (binaries) | The actual asset files. **NOT committed** (see `.gitignore`) — they live on disk locally and are mirrored to the host. |
 | `public/` | **Generated** deployable (gitignored). `build` hardlinks the included assets here. |
-| `firebase.json` | **Generated** (attribution headers derived from metadata). Don't hand-edit. |
+| `public/_headers` | **Generated** Cloudflare Pages/Netlify header rules (from metadata). |
+| `public/robots.txt` | **Generated** `Disallow: /` (reinforces the `noindex` header). |
+| `firebase.json` | **Generated** Firebase Hosting config + headers (fallback host). Don't hand-edit. |
 | `derived/` | **Generated** glb from conversion (gitignored); overlaid into `public/`. |
 | `.cache/` | Blender conversion cache keyed by input signature (gitignored). |
 | `bin/mirror.ts` | Stages `assets/` + `derived/` → `public/`, generates `firebase.json`. |
@@ -139,7 +146,7 @@ Consumers set the base once and reference assets by logical path:
 
 ```js
 import { setAssetBase, assetUrl, b3dLoader } from 'tosijs-3d'
-setAssetBase('https://static.tosijs.net')
+setAssetBase('https://cdn.tosijs.net')
 b3dLoader({ url: assetUrl('kenney/vehicles/car.glb') })
 ```
 

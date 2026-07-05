@@ -168,10 +168,29 @@ if (existsSync(SRC)) walk(SRC, {}, [])
 else console.warn('mirror: no assets/ directory yet — nothing to stage.')
 stageTree(DERIVED)
 
-// ---- generate firebase.json ----------------------------------------------
+// ---- generate host config (Cloudflare _headers + firebase.json) -----------
 // Shallow rules first so deeper (more specific) namespace rules cascade last and
-// win on any key collision. The common `**` block carries CORS/cache/noindex.
+// win on any key collision. The common block carries CORS/cache/noindex; both host
+// formats are generated from the SAME rules so the deploy target is a DNS choice.
 rules.sort((a, b) => a.path.split('/').length - b.path.split('/').length)
+const COMMON: [string, string][] = [
+  ['Access-Control-Allow-Origin', '*'],
+  ['Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS'],
+  ['Cache-Control', 'public, max-age=31536000, immutable'],
+  ['X-Robots-Tag', 'noindex'],
+]
+
+// Cloudflare Pages / Netlify `_headers` (+ robots.txt) live INSIDE public/.
+const block = (pattern: string, hs: [string, string][]) =>
+  pattern + '\n' + hs.map(([k, v]) => `  ${k}: ${v}`).join('\n') + '\n'
+const headersFile = [
+  block('/*', COMMON),
+  ...rules.map((r) => block(`/${r.path}/*`, Object.entries(r.headers))),
+].join('\n')
+writeFileSync(join(OUT, '_headers'), headersFile)
+writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n')
+
+// firebase.json (Firebase Hosting) at repo root — the alternate deploy target.
 const firebase = {
   hosting: {
     public: 'public',
@@ -179,15 +198,7 @@ const firebase = {
     trailingSlash: false,
     ignore: ['firebase.json', '**/.*', '**/node_modules/**'],
     headers: [
-      {
-        source: '**',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, HEAD, OPTIONS' },
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-          { key: 'X-Robots-Tag', value: 'noindex' },
-        ],
-      },
+      { source: '**', headers: COMMON.map(([key, value]) => ({ key, value })) },
       ...rules.map((r) => ({
         source: `/${r.path}/**`,
         headers: Object.entries(r.headers).map(([key, value]) => ({ key, value })),
@@ -199,5 +210,5 @@ writeFileSync(join(ROOT, 'firebase.json'), JSON.stringify(firebase, null, 2) + '
 
 console.log(
   `mirror: ${files} file(s) staged (${hardlinked} hardlinked) · ` +
-    `${rules.length} attributed namespace(s) → firebase.json`
+    `${rules.length} attributed namespace(s) → _headers + firebase.json`
 )
