@@ -6,6 +6,12 @@
     "**/*.uasset",
     "**/*.meta",
     "**/Thumbs.db",
-    "**/.DS_Store"
+    "**/.DS_Store",
+    "*.fbx",
+    "*.obj",
+    "*.blend",
+    "*.html",
+    "*.url",
+    "*.txt"
   ]
 }

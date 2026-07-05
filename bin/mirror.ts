@@ -72,7 +72,8 @@ const globToRe = (glob: string, base: string): RegExp => {
     .replace(/\x01/g, '.*')
   const prefix = base ? esc(base) + '/' : ''
   const mid = floating ? '(?:.*/)?' : ''
-  return new RegExp('^' + prefix + mid + body + '(?:/.*)?$')
+  // case-insensitive: asset extensions/folders vary in case across libraries.
+  return new RegExp('^' + prefix + mid + body + '(?:/.*)?$', 'i')
 }
 
 const loadMeta = (dir: string): Meta | null => {

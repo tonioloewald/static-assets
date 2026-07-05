@@ -6,5 +6,13 @@
     "patreon": "https://patreon.com/kenney",
     "link": "https://kenney.nl"
   },
-  "exclude": ["Archive", "Preview*", "FBX format", "OBJ format", "DAE format"]
+  "exclude": [
+    "Archive",
+    "Preview*",
+    "FBX format",
+    "OBJ format",
+    "DAE format",
+    "2D assets",
+    "Icons"
+  ]
 }
