@@ -9,9 +9,17 @@ textures, audio, …) for tosijs.net projects. It keeps heavy binaries OUT of ev
 consuming repo (e.g. `tosijs-3d`), which reference assets by URL instead. One repo
 holds the assets + the tooling to publish them; everything else just links in.
 
+See **`CONTENT-MAP.md`** for a living map of the *content* (how Kenney's assets are
+organized and snap together — reskin/equip conventions, the character kit, etc.).
+This file is about the *tooling*.
+
 ## Commands
 
-- `bun run build` — stage `assets/` → `public/` and regenerate `firebase.json`.
+- `bun run scan` — discover source models with no glb and write `convert` specs into
+  each pack's `metadata.json` (dry-run; add `--write` to apply). See Conversion below.
+- `bun run convert` — execute those specs via Blender (cached) → `derived/`.
+- `bun run build` — `convert`, then stage `assets/` + `derived/` → `public/` and
+  regenerate `firebase.json`.
 - `bun run deploy` — build, then `firebase deploy --only hosting`.
 
 Deploying needs the Firebase CLI and a selected project (`firebase use <project>`).
@@ -26,7 +34,13 @@ The whole publish is driven by `metadata.json` — you rarely touch anything els
 | `assets/**` (binaries) | The actual asset files. **NOT committed** (see `.gitignore`) — they live on disk locally and are mirrored to the host. |
 | `public/` | **Generated** deployable (gitignored). `build` hardlinks the included assets here. |
 | `firebase.json` | **Generated** (attribution headers derived from metadata). Don't hand-edit. |
-| `bin/mirror.ts` | The build/generator. |
+| `derived/` | **Generated** glb from conversion (gitignored); overlaid into `public/`. |
+| `.cache/` | Blender conversion cache keyed by input signature (gitignored). |
+| `bin/mirror.ts` | Stages `assets/` + `derived/` → `public/`, generates `firebase.json`. |
+| `bin/scan-conversions.ts` | Discovers uncovered models, writes `convert` specs into metadata. |
+| `bin/convert.ts` | Runs `convert` specs via Blender (cached) → `derived/`. |
+| `bin/blender-export.py` | Blender headless: fbx/blend → glb, with animation merging. |
+| `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |
 
 Because binaries aren't in git, a fresh clone has the *manifest* (metadata.json +
 structure) but not the payload — re-populate `assets/**` from the original bundle
@@ -51,6 +65,43 @@ inspectable via `curl -I`, with zero per-file work.
 
 Root `assets/metadata.json` holds the global excludes (engine junk). Each pack dir
 (e.g. `assets/kenney/metadata.json`) holds its attribution.
+
+## Conversion (source → glb)
+
+Some models ship only as fbx/blend with no glb equivalent (Kenney: just the animated
+characters). Conversion is **metadata-driven and cached** so it's automated and
+reproducible — the *spec* is versioned even though the binaries aren't:
+
+1. `bun run scan` walks `assets/kenney/3D assets/<pack>/` with **pack-scoped**
+   coverage (an fbx is "covered" if a same-basename glb/gltf exists anywhere in the
+   pack — Kenney's parallel `FBX format/` + `GLB format/` folders). For each uncovered
+   pack it writes a `convert` array into the pack's `metadata.json`:
+
+   ```json
+   "convert": [
+     { "output": "characterMedium.glb", "model": "Model/characterMedium.fbx",
+       "animations": ["Animations/idle.fbx", "Animations/run.fbx"] },
+     { "output": "Accessories/hat.glb", "input": "Accessories/hat.fbx" }
+   ]
+   ```
+   - `merge` (`model` + `animations[]`) → one glb with the clips as **named
+     animations** (idle/run/jump…), via `bin/blender-export.py` (imports the model,
+     stashes each clip's action on the shared rig, exports GLB). Ready for
+     `b3dBiped`'s animation state machine.
+   - `single` (`input`) → a one-to-one glb (static accessories, etc.).
+
+2. `bun run convert` executes each spec with **Blender headless** (`BLENDER` env var
+   overrides the path), caches by input signature (`.cache/`), and writes results to
+   `derived/<same path>/…glb`. Re-runs are near-instant. Limit to a pack:
+   `bun bin/convert.ts Protagonists`.
+
+3. `bin/mirror.ts` overlays `derived/` into `public/`, so converted glb serve at
+   their logical path (`/kenney/3D assets/…/characterMedium.glb`) with the pack's
+   attribution headers — same as any other asset.
+
+`derived/` and `.cache/` are generated (gitignored). The 23 `.blend` files are the
+Bundle's *sources* for its fbx (already exported), so we convert the fbx and ignore
+the blends. Requires Blender (`/Applications/Blender.app` on macOS).
 
 ## Ethics — why it's built this way (keep it this way)
 

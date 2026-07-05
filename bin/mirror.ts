@@ -52,6 +52,7 @@ type Meta = {
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SRC = join(ROOT, 'assets')
 const OUT = join(ROOT, 'public')
+const DERIVED = join(ROOT, 'derived') // generated glb from bin/convert.ts
 
 const toPosix = (p: string) => p.split(/[\\/]/).join('/')
 const esc = (s: string) => s.replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -138,10 +139,34 @@ const walk = (
   }
 }
 
+// Overlay the generated conversions (already filtered) — a plain recursive copy.
+const stageTree = (root: string): void => {
+  if (!existsSync(root)) return
+  const rec = (dir: string): void => {
+    for (const name of readdirSync(dir)) {
+      const abs = join(dir, name)
+      if (statSync(abs).isDirectory()) rec(abs)
+      else {
+        const dest = join(OUT, toPosix(relative(root, abs)))
+        mkdirSync(dirname(dest), { recursive: true })
+        try {
+          linkSync(abs, dest)
+          hardlinked++
+        } catch {
+          copyFileSync(abs, dest)
+        }
+        files++
+      }
+    }
+  }
+  rec(root)
+}
+
 rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
 if (existsSync(SRC)) walk(SRC, {}, [])
 else console.warn('mirror: no assets/ directory yet — nothing to stage.')
+stageTree(DERIVED)
 
 // ---- generate firebase.json ----------------------------------------------
 // Shallow rules first so deeper (more specific) namespace rules cascade last and

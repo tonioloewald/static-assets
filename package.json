@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Mirror source for static.tosijs.net — a shared static-asset CDN for tosijs.net projects.",
   "scripts": {
-    "build": "bun bin/mirror.ts",
-    "deploy": "bun bin/mirror.ts && firebase deploy --only hosting"
+    "scan": "bun bin/scan-conversions.ts",
+    "convert": "bun bin/convert.ts",
+    "build": "bun bin/convert.ts && bun bin/mirror.ts",
+    "deploy": "bun bin/convert.ts && bun bin/mirror.ts && firebase deploy --only hosting"
   }
 }

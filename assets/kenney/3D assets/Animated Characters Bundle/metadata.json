@@ -1,0 +1,260 @@
+{
+  "convert": [
+    {
+      "output": "characterLargeFemale.glb",
+      "model": "Models/characterLargeFemale.fbx",
+      "animations": [
+        "Animations/attack.fbx",
+        "Animations/crouch.fbx",
+        "Animations/crouchIdle.fbx",
+        "Animations/crouchWalk.fbx",
+        "Animations/death.fbx",
+        "Animations/idle.fbx",
+        "Animations/interactGround.fbx",
+        "Animations/interactStanding.fbx",
+        "Animations/jump.fbx",
+        "Animations/kick.fbx",
+        "Animations/punch.fbx",
+        "Animations/racingIdle.fbx",
+        "Animations/racingLeft.fbx",
+        "Animations/racingRight.fbx",
+        "Animations/run.fbx",
+        "Animations/shoot.fbx",
+        "Animations/walk.fbx"
+      ]
+    },
+    {
+      "output": "characterLargeMale.glb",
+      "model": "Models/characterLargeMale.fbx",
+      "animations": [
+        "Animations/attack.fbx",
+        "Animations/crouch.fbx",
+        "Animations/crouchIdle.fbx",
+        "Animations/crouchWalk.fbx",
+        "Animations/death.fbx",
+        "Animations/idle.fbx",
+        "Animations/interactGround.fbx",
+        "Animations/interactStanding.fbx",
+        "Animations/jump.fbx",
+        "Animations/kick.fbx",
+        "Animations/punch.fbx",
+        "Animations/racingIdle.fbx",
+        "Animations/racingLeft.fbx",
+        "Animations/racingRight.fbx",
+        "Animations/run.fbx",
+        "Animations/shoot.fbx",
+        "Animations/walk.fbx"
+      ]
+    },
+    {
+      "output": "characterMedium.glb",
+      "model": "Models/characterMedium.fbx",
+      "animations": [
+        "Animations/attack.fbx",
+        "Animations/crouch.fbx",
+        "Animations/crouchIdle.fbx",
+        "Animations/crouchWalk.fbx",
+        "Animations/death.fbx",
+        "Animations/idle.fbx",
+        "Animations/interactGround.fbx",
+        "Animations/interactStanding.fbx",
+        "Animations/jump.fbx",
+        "Animations/kick.fbx",
+        "Animations/punch.fbx",
+        "Animations/racingIdle.fbx",
+        "Animations/racingLeft.fbx",
+        "Animations/racingRight.fbx",
+        "Animations/run.fbx",
+        "Animations/shoot.fbx",
+        "Animations/walk.fbx"
+      ]
+    },
+    {
+      "output": "characterSmall.glb",
+      "model": "Models/characterSmall.fbx",
+      "animations": [
+        "Animations/attack.fbx",
+        "Animations/crouch.fbx",
+        "Animations/crouchIdle.fbx",
+        "Animations/crouchWalk.fbx",
+        "Animations/death.fbx",
+        "Animations/idle.fbx",
+        "Animations/interactGround.fbx",
+        "Animations/interactStanding.fbx",
+        "Animations/jump.fbx",
+        "Animations/kick.fbx",
+        "Animations/punch.fbx",
+        "Animations/racingIdle.fbx",
+        "Animations/racingLeft.fbx",
+        "Animations/racingRight.fbx",
+        "Animations/run.fbx",
+        "Animations/shoot.fbx",
+        "Animations/walk.fbx"
+      ]
+    },
+    {
+      "output": "Accessories/Animals/earSingle.glb",
+      "input": "Accessories/Animals/earSingle.fbx"
+    },
+    {
+      "output": "Accessories/Animals/earsA.glb",
+      "input": "Accessories/Animals/earsA.fbx"
+    },
+    {
+      "output": "Accessories/Animals/earsB.glb",
+      "input": "Accessories/Animals/earsB.fbx"
+    },
+    {
+      "output": "Accessories/Animals/earsC.glb",
+      "input": "Accessories/Animals/earsC.fbx"
+    },
+    {
+      "output": "Accessories/Animals/earsD.glb",
+      "input": "Accessories/Animals/earsD.fbx"
+    },
+    {
+      "output": "Accessories/Animals/earsE.glb",
+      "input": "Accessories/Animals/earsE.fbx"
+    },
+    {
+      "output": "Accessories/Animals/mouthA.glb",
+      "input": "Accessories/Animals/mouthA.fbx"
+    },
+    {
+      "output": "Accessories/Animals/mouthB.glb",
+      "input": "Accessories/Animals/mouthB.fbx"
+    },
+    {
+      "output": "Accessories/Animals/tailA.glb",
+      "input": "Accessories/Animals/tailA.fbx"
+    },
+    {
+      "output": "Accessories/Animals/tailB.glb",
+      "input": "Accessories/Animals/tailB.fbx"
+    },
+    {
+      "output": "Accessories/astroBackpack.glb",
+      "input": "Accessories/astroBackpack.fbx"
+    },
+    {
+      "output": "Accessories/astroGun.glb",
+      "input": "Accessories/astroGun.fbx"
+    },
+    {
+      "output": "Accessories/astroHelmet.glb",
+      "input": "Accessories/astroHelmet.fbx"
+    },
+    {
+      "output": "Accessories/beard.glb",
+      "input": "Accessories/beard.fbx"
+    },
+    {
+      "output": "Accessories/cap.glb",
+      "input": "Accessories/cap.fbx"
+    },
+    {
+      "output": "Accessories/fantasyArmguard.glb",
+      "input": "Accessories/fantasyArmguard.fbx"
+    },
+    {
+      "output": "Accessories/fantasyBackpack.glb",
+      "input": "Accessories/fantasyBackpack.fbx"
+    },
+    {
+      "output": "Accessories/fantasyCap.glb",
+      "input": "Accessories/fantasyCap.fbx"
+    },
+    {
+      "output": "Accessories/fantasyHolster.glb",
+      "input": "Accessories/fantasyHolster.fbx"
+    },
+    {
+      "output": "Accessories/fantasyShoulderL.glb",
+      "input": "Accessories/fantasyShoulderL.fbx"
+    },
+    {
+      "output": "Accessories/fantasyShoulderR.glb",
+      "input": "Accessories/fantasyShoulderR.fbx"
+    },
+    {
+      "output": "Accessories/farmerCap.glb",
+      "input": "Accessories/farmerCap.fbx"
+    },
+    {
+      "output": "Accessories/glassesRetro.glb",
+      "input": "Accessories/glassesRetro.fbx"
+    },
+    {
+      "output": "Accessories/glassesRound.glb",
+      "input": "Accessories/glassesRound.fbx"
+    },
+    {
+      "output": "Accessories/hairBobcut.glb",
+      "input": "Accessories/hairBobcut.fbx"
+    },
+    {
+      "output": "Accessories/hairPigtail.glb",
+      "input": "Accessories/hairPigtail.fbx"
+    },
+    {
+      "output": "Accessories/hairPonytail.glb",
+      "input": "Accessories/hairPonytail.fbx"
+    },
+    {
+      "output": "Accessories/hairTail.glb",
+      "input": "Accessories/hairTail.fbx"
+    },
+    {
+      "output": "Accessories/militaryBackpack.glb",
+      "input": "Accessories/militaryBackpack.fbx"
+    },
+    {
+      "output": "Accessories/militaryBeret.glb",
+      "input": "Accessories/militaryBeret.fbx"
+    },
+    {
+      "output": "Accessories/militaryHelmet.glb",
+      "input": "Accessories/militaryHelmet.fbx"
+    },
+    {
+      "output": "Accessories/militaryShoulderL.glb",
+      "input": "Accessories/militaryShoulderL.fbx"
+    },
+    {
+      "output": "Accessories/militaryShoulderR.glb",
+      "input": "Accessories/militaryShoulderR.fbx"
+    },
+    {
+      "output": "Accessories/modernBackpack.glb",
+      "input": "Accessories/modernBackpack.fbx"
+    },
+    {
+      "output": "Accessories/pistol.glb",
+      "input": "Accessories/pistol.fbx"
+    },
+    {
+      "output": "Accessories/pitchfork.glb",
+      "input": "Accessories/pitchfork.fbx"
+    },
+    {
+      "output": "Accessories/racingHelmet.glb",
+      "input": "Accessories/racingHelmet.fbx"
+    },
+    {
+      "output": "Accessories/rifle.glb",
+      "input": "Accessories/rifle.fbx"
+    },
+    {
+      "output": "Accessories/shield.glb",
+      "input": "Accessories/shield.fbx"
+    },
+    {
+      "output": "Accessories/strawhat.glb",
+      "input": "Accessories/strawhat.fbx"
+    },
+    {
+      "output": "Accessories/sword.glb",
+      "input": "Accessories/sword.fbx"
+    }
+  ]
+}
