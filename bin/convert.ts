@@ -25,7 +25,9 @@ import {
 } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { execFileSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import os from 'node:os'
 import { createHash } from 'node:crypto'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -67,16 +69,24 @@ const sig = (files: string[]) =>
     .digest('hex')
     .slice(0, 16)
 
-let built = 0
-let cached = 0
-let done = 0
+// Flatten specs into a task list, tagging which need a Blender build (uncached).
+type Task = {
+  rel: string
+  output: string
+  args: string[]
+  cacheGlb: string
+  outAbs: string
+  cached: boolean
+  failed?: boolean
+}
+const tasks: Task[] = []
 for (const { dir, specs } of jobs) {
   const rel = relative(SRC, dir)
   if (only && !rel.includes(only)) continue
   for (const spec of specs) {
-    const inputs = (spec.model ? [spec.model, ...(spec.animations ?? [])] : [spec.input!]).map(
-      (i) => join(dir, i)
-    )
+    const inputs = (
+      spec.model ? [spec.model, ...(spec.animations ?? [])] : [spec.input!]
+    ).map((i) => join(dir, i))
     if (inputs.some((f) => !existsSync(f))) {
       console.warn(`  skip ${rel}/${spec.output} — missing input`)
       continue
@@ -88,37 +98,65 @@ for (const { dir, specs } of jobs) {
       '-' +
       createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 8)
     const cacheGlb = join(CACHE, key + '.glb')
-    const outAbs = join(DERIVED, rel, spec.output)
-    mkdirSync(dirname(outAbs), { recursive: true })
-
-    if (!existsSync(cacheGlb)) {
-      mkdirSync(CACHE, { recursive: true })
-      const args = spec.model
+    tasks.push({
+      rel,
+      output: spec.output,
+      args: spec.model
         ? ['merge', cacheGlb, ...inputs]
-        : ['single', inputs[0], cacheGlb]
-      console.log(`  build ${rel}/${spec.output} (${inputs.length} input(s))`)
-      try {
-        execFileSync(
-          BLENDER,
-          ['--background', '--factory-startup', '--python', PY, '--', ...args],
-          { stdio: ['ignore', 'ignore', 'pipe'] }
-        )
-      } catch (e: any) {
-        console.error(`  FAILED ${rel}/${spec.output}\n${e.stderr?.toString?.() ?? e}`)
-        continue
-      }
-      built++
-    } else cached++
-
-    try {
-      rmSync(outAbs, { force: true })
-      linkSync(cacheGlb, outAbs)
-    } catch {
-      copyFileSync(cacheGlb, outAbs)
-    }
-    done++
+        : ['single', inputs[0], cacheGlb],
+      cacheGlb,
+      outAbs: join(DERIVED, rel, spec.output),
+      cached: existsSync(cacheGlb),
+    })
   }
 }
+
+// Build the uncached specs through a pool of parallel Blender processes.
+const pexec = promisify(execFile)
+const JOBS =
+  Number(process.env.CONVERT_JOBS) || Math.min(8, Math.max(1, os.cpus().length - 1))
+const toBuild = tasks.filter((t) => !t.cached)
+if (toBuild.length) mkdirSync(CACHE, { recursive: true })
+
+let built = 0
+const runPool = async <T>(items: T[], n: number, fn: (x: T) => Promise<void>) => {
+  let i = 0
+  await Promise.all(
+    Array.from({ length: Math.min(n, items.length) }, async () => {
+      while (i < items.length) await fn(items[i++])
+    })
+  )
+}
+await runPool(toBuild, JOBS, async (t) => {
+  console.log(`  build ${t.rel}/${t.output}`)
+  try {
+    await pexec(
+      BLENDER,
+      ['--background', '--factory-startup', '--python', PY, '--', ...t.args],
+      { maxBuffer: 1 << 26 }
+    )
+    built++
+  } catch (e: any) {
+    t.failed = true
+    const tail = (e.stderr?.toString?.() ?? String(e)).trim().split('\n').slice(-2).join(' ')
+    console.error(`  FAILED ${t.rel}/${t.output} — ${tail}`)
+  }
+})
+
+// Link every successful output (freshly built + previously cached) into derived/.
+let done = 0
+for (const t of tasks) {
+  if (t.failed || !existsSync(t.cacheGlb)) continue
+  mkdirSync(dirname(t.outAbs), { recursive: true })
+  try {
+    rmSync(t.outAbs, { force: true })
+    linkSync(t.cacheGlb, t.outAbs)
+  } catch {
+    copyFileSync(t.cacheGlb, t.outAbs)
+  }
+  done++
+}
 console.log(
-  `convert: ${done} output(s) — ${built} built, ${cached} cached → derived/`
+  `convert: ${done} output(s) — ${built} built (${JOBS}× parallel), ` +
+    `${tasks.length - toBuild.length} cached → derived/`
 )

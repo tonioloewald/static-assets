@@ -7,7 +7,7 @@
     "scan": "bun bin/scan-conversions.ts",
     "convert": "bun bin/convert.ts",
     "build": "bun bin/convert.ts && bun bin/mirror.ts",
-    "deploy": "bun run build && wrangler pages deploy public --project-name cdn-tosijs",
-    "deploy:firebase": "bun run build && firebase deploy --only hosting"
+    "deploy": "bun run build && bunx wrangler pages deploy public --project-name cdn-tosijs",
+    "deploy:firebase": "bun run build && bunx firebase-tools deploy --only hosting"
   }
 }
