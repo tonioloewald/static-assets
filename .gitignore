@@ -1,0 +1,18 @@
+public/
+node_modules/
+.firebase/
+*.log
+firebase-debug.log
+
+# Asset binaries are NOT committed — they'd bloat git history and (for paid
+# bundles) shouldn't live in a repo. They sit on disk locally and are mirrored to
+# the host by `bun run build`. We DO track the metadata.json files + directory
+# structure, so the manifest of what SHOULD be there is versioned without the
+# payload.
+/assets/**
+!/assets/**/
+!/assets/**/metadata.json
+
+# macOS cruft
+.DS_Store
+**/.DS_Store

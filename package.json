@@ -1,0 +1,10 @@
+{
+  "name": "@tosijs/static-assets",
+  "private": true,
+  "type": "module",
+  "description": "Mirror source for static.tosijs.net — a shared static-asset CDN for tosijs.net projects.",
+  "scripts": {
+    "build": "bun bin/mirror.ts",
+    "deploy": "bun bin/mirror.ts && firebase deploy --only hosting"
+  }
+}

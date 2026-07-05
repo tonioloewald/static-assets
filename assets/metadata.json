@@ -1,0 +1,11 @@
+{
+  "exclude": [
+    "**/Unity/**",
+    "**/Unreal/**",
+    "**/*.unitypackage",
+    "**/*.uasset",
+    "**/*.meta",
+    "**/Thumbs.db",
+    "**/.DS_Store"
+  ]
+}

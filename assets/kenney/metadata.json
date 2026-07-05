@@ -1,0 +1,10 @@
+{
+  "headers": {
+    "credit": "Kenney",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "social": "https://social.kenney.nl/bluesky",
+    "patreon": "https://patreon.com/kenney",
+    "link": "https://kenney.nl"
+  },
+  "exclude": ["Archive", "Preview*", "FBX format", "OBJ format", "DAE format"]
+}
