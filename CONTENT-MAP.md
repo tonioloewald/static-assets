@@ -81,15 +81,113 @@ Bundle anims onto a themed-pack model — almost certainly identical.)
 
 ---
 
+---
+
+## ⭐ Modular kit grids & scale (world-building)
+
+Measured world-space footprints (glb, node transforms applied). **Two grid families:**
+
+| Kit | Base footprint (X×Z) | Family |
+| --- | --- | --- |
+| **Nature Kit** | 1 × 1 | 1-unit ✅ |
+| **City Kit** (Roads / Commercial / Suburban / Industrial) | 1 × 1 | 1-unit ✅ |
+| **Road Pack** | 1 × 1 | 1-unit ✅ |
+| **Mini Dungeon** (and Mini * kits) | 1 × 1 | 1-unit ✅ |
+| **Hexagon Kit** | 1-unit hex (~1 × 1.15) | 1-unit (hex topology) |
+| **Platformer Kit** | ~1 × 1 (beveled blocks) | 1-unit |
+| **Building Kit** | 2 × 2 | its own unit |
+| **Modular Space Kit** | 4 × 4 floor · walls 2w × ~4h | modular interior |
+| **Modular Dungeon Kit** | 4×4 cell · walls 2w × ~4h · `template-*` | modular interior |
+| Furniture Kit | real-scale props (table ≈ 0.84 m) | sits inside rooms |
+
+- **1-unit family — Nature + City + Roads + Mini + Hexagon all share a 1×1 cell.** So
+  you CAN assemble outdoor spaces from Nature and embed cities/roads/paths on the same
+  grid. This is the headline: outdoor world-building is directly mixable.
+- **Modular interior family — Modular Dungeon + Modular Space are the SAME system**
+  (4×4 floors, 2-wide × ~4-tall walls, identical `template-floor/wall/*` names) at 4×
+  the 1-unit cell. Mix within the family freely; **scale ×4** to bridge to 1-unit props.
+- Always measure a base tile before mixing families — the 1-unit and 4-unit systems
+  don't share a cell size.
+
+## ⭐ Tile naming ↔ connectivity (auto-assembly from names)
+
+Kenney names modular tiles by a **connectivity vocabulary** — words, but 1:1 mappable
+to a binary open/closed edge model, so a map can be assembled knowing only the scale +
+tile names. The SAME vocabulary repeats across sub-types and largely across kits:
+
+| Connectivity | Nature (`ground_path*`/`ground_river*`) | City (`road-*`) | Edges open | Distinct rotations |
+| --- | --- | --- | --- | --- |
+| straight (2 opposite) | `Straight` | `road-straight` | N+S | 2 |
+| turn 90° (2 adjacent) | `Bend` / `Corner` | `road-curve` / `road-bend` | N+E | 4 |
+| T-junction (3) | `Split` | `road-intersection` | N+E+S | 4 |
+| cross (4) | `Cross` | `road-crossroad` | N+E+S+W | 1 |
+| dead-end (1) | `End` / `EndClosed` | `road-end` | N | 4 |
+| filler / cap | `Tile` / `Open` / `Side` | — | 0 | — |
+
+- Nature's `ground_path*` and `ground_river*` are **identical token sets** — one scheme,
+  two skins. City roads use the same *concepts* with slightly different words → a small
+  per-kit alias table (`bend/curve/corner`→turn, `split/intersection`→T,
+  `cross/crossroad`→X, `end`→dead-end) unifies them.
+- With `name → (edgeMask, symmetry)` + the 1-unit grid + 4 rotations, you can
+  auto-assemble road/path/river networks from a binary open/closed map — the same
+  workflow as our own tile naming.
+- **Exceptions:** **Road Pack is numeric** (`tile000`–`tile293`) — NOT self-describing,
+  needs a manual lookup (prefer City Kit - Roads, which is semantic). **Hexagon Kit**
+  uses hex connectivity (`path-corner`, `-corner-sharp`, `-crossing`, `-intersectionA/B`,
+  `-end`) → a 6-bit hex edge-mask, A/B disambiguating rotationally-distinct junctions.
+- Cosmetic suffixes are **additive, same connectivity**: `-barrier`, `-sidewalk`,
+  `-line`, `-pavement`, `-square`. Strip them to get the base connectivity token.
+
+### Encoding it in metadata (so naming consistency doesn't matter)
+
+Because `metadata.json` is overlaid down the tree and hand-editable, we encode the
+grid + connectivity **there** — our metadata is the source of truth, not Kenney's
+filenames. Consistent naming just lets us bulk-derive it via rules; inconsistent or
+numeric kits get explicit entries. Proposed fields on a pack's `metadata.json`:
+
+```json
+{
+  "grid": { "shape": "square", "unit": 1 },
+  "tileRules": [
+    { "match": "*Straight",        "edges": "NS" },
+    { "match": "*Bend|*Corner",    "edges": "NE" },
+    { "match": "*Split",           "edges": "NES" },
+    { "match": "*Cross",           "edges": "NESW" },
+    { "match": "*End",             "edges": "N" }
+  ],
+  "tiles": {
+    "tile022": { "edges": "NS" },
+    "tile047": { "edges": "NE", "rot": 90 }
+  }
+}
+```
+
+Resolution order for a tile's open edges: explicit `tiles[name]` → first matching
+`tileRules` → (fallback) the name vocabulary above. So semantic kits (Nature, City)
+need only a few `tileRules` — overlaid from a shared parent so path+river+roads reuse
+one table — while the numeric **Road Pack** gets explicit `tiles` entries (authored
+once, versioned), and any per-tile art quirk gets a `tiles` override with a `rot`.
+
+Same principle as the `convert` specs: **metadata is the durable, shared source of
+truth; the assets are just payload.** An assembler in tosijs-3d reads `grid` +
+resolved edges and places rotated instances on the grid from a binary open/closed map.
+
+---
+
 ## Open questions / to-map (living log)
 
+- [ ] **Edge-mask metadata** — author `grid` + `tileRules`/`tiles` (above) for Nature,
+  City Roads, Road Pack, Hexagon. Metadata-driven, so Kenney's naming (in)consistency
+  is irrelevant; this is what unlocks programmatic map assembly.
+- [ ] **Rotation origin** — confirm base tiles are centered on their cell so 90°
+  rotations align (measure center offset, not just footprint).
+- [ ] **Road Pack `tile000`–`293`** → connectivity lookup, or deprecate for City Roads.
+- [ ] **Cross-family scale** — verify ×4 exactly bridges 1-unit ↔ Modular interior.
 - [ ] **Accessory snap correctness** — origin/orientation of Bundle accessories vs
   bone space (see Equip ⚠️). Record any offsets/rotations needed per accessory kind.
 - [ ] **Cross-anim bone identity** — are Bundle bone names byte-identical to the
   themed-pack model? (enables reusing the 17 clips everywhere)
 - [ ] **2D assets** — spritesheet/tilemap conventions (`Tilesheet.txt`, `.tsx`/`.tmx`
-  seen in 1-Bit packs). Atlas layout / naming.
+  in 1-Bit packs). Atlas layout / naming.
 - [ ] **Audio** — SFX/music categories + formats.
 - [ ] **UI assets / Icons** — nine-slice? sprite naming?
-- [ ] **Kit packs** (vehicles, buildings, nature) — do they snap on a modular grid?
-  Kenney "kit" packs typically tile on a fixed unit; capture the grid size when found.

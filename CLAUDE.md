@@ -66,6 +66,11 @@ inspectable via `curl -I`, with zero per-file work.
 Root `assets/metadata.json` holds the global excludes (engine junk). Each pack dir
 (e.g. `assets/kenney/metadata.json`) holds its attribution.
 
+`metadata.json` is also the home for **app-level semantics** the filenames don't
+capture — e.g. modular-kit `grid` + tile connectivity (`tileRules`/`tiles`) so maps
+can be assembled from tile names + scale regardless of Kenney's naming consistency.
+Same overlay rules apply. See `CONTENT-MAP.md` for those conventions.
+
 ## Conversion (source → glb)
 
 Some models ship only as fbx/blend with no glb equivalent (Kenney: just the animated
