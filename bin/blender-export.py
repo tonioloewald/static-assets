@@ -42,7 +42,26 @@ def import_any(path):
         raise SystemExit(f"blender-export: unsupported input {path}")
 
 
+def force_opaque():
+    # Kenney character skin materials import from FBX with base-color alpha 0 and
+    # export as glTF alphaMode MASK → the whole mesh is clipped away (invisible).
+    # They're opaque characters, so force opaque blending + full alpha before export.
+    for mat in bpy.data.materials:
+        try:
+            mat.blend_method = "OPAQUE"
+        except Exception:
+            pass
+        if getattr(mat, "use_nodes", False) and mat.node_tree:
+            for node in mat.node_tree.nodes:
+                if node.type == "BSDF_PRINCIPLED" and "Alpha" in node.inputs:
+                    try:
+                        node.inputs["Alpha"].default_value = 1.0
+                    except Exception:
+                        pass
+
+
 def export_glb(path):
+    force_opaque()
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     bpy.ops.export_scene.gltf(
         filepath=path,
