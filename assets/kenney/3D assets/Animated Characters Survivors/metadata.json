@@ -1,14 +1,1 @@
-{
-  "scale": 0.48,
-  "convert": [
-    {
-      "output": "characterMedium.glb",
-      "model": "Model/characterMedium.fbx",
-      "animations": [
-        "Animations/idle.fbx",
-        "Animations/jump.fbx",
-        "Animations/run.fbx"
-      ]
-    }
-  ]
-}
+{}

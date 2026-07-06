@@ -2,98 +2,6 @@
   "scale": 0.48,
   "convert": [
     {
-      "output": "characterLargeFemale.glb",
-      "model": "Models/characterLargeFemale.fbx",
-      "animations": [
-        "Animations/attack.fbx",
-        "Animations/crouch.fbx",
-        "Animations/crouchIdle.fbx",
-        "Animations/crouchWalk.fbx",
-        "Animations/death.fbx",
-        "Animations/idle.fbx",
-        "Animations/interactGround.fbx",
-        "Animations/interactStanding.fbx",
-        "Animations/jump.fbx",
-        "Animations/kick.fbx",
-        "Animations/punch.fbx",
-        "Animations/racingIdle.fbx",
-        "Animations/racingLeft.fbx",
-        "Animations/racingRight.fbx",
-        "Animations/run.fbx",
-        "Animations/shoot.fbx",
-        "Animations/walk.fbx"
-      ]
-    },
-    {
-      "output": "characterLargeMale.glb",
-      "model": "Models/characterLargeMale.fbx",
-      "animations": [
-        "Animations/attack.fbx",
-        "Animations/crouch.fbx",
-        "Animations/crouchIdle.fbx",
-        "Animations/crouchWalk.fbx",
-        "Animations/death.fbx",
-        "Animations/idle.fbx",
-        "Animations/interactGround.fbx",
-        "Animations/interactStanding.fbx",
-        "Animations/jump.fbx",
-        "Animations/kick.fbx",
-        "Animations/punch.fbx",
-        "Animations/racingIdle.fbx",
-        "Animations/racingLeft.fbx",
-        "Animations/racingRight.fbx",
-        "Animations/run.fbx",
-        "Animations/shoot.fbx",
-        "Animations/walk.fbx"
-      ]
-    },
-    {
-      "output": "characterMedium.glb",
-      "model": "Models/characterMedium.fbx",
-      "animations": [
-        "Animations/attack.fbx",
-        "Animations/crouch.fbx",
-        "Animations/crouchIdle.fbx",
-        "Animations/crouchWalk.fbx",
-        "Animations/death.fbx",
-        "Animations/idle.fbx",
-        "Animations/interactGround.fbx",
-        "Animations/interactStanding.fbx",
-        "Animations/jump.fbx",
-        "Animations/kick.fbx",
-        "Animations/punch.fbx",
-        "Animations/racingIdle.fbx",
-        "Animations/racingLeft.fbx",
-        "Animations/racingRight.fbx",
-        "Animations/run.fbx",
-        "Animations/shoot.fbx",
-        "Animations/walk.fbx"
-      ]
-    },
-    {
-      "output": "characterSmall.glb",
-      "model": "Models/characterSmall.fbx",
-      "animations": [
-        "Animations/attack.fbx",
-        "Animations/crouch.fbx",
-        "Animations/crouchIdle.fbx",
-        "Animations/crouchWalk.fbx",
-        "Animations/death.fbx",
-        "Animations/idle.fbx",
-        "Animations/interactGround.fbx",
-        "Animations/interactStanding.fbx",
-        "Animations/jump.fbx",
-        "Animations/kick.fbx",
-        "Animations/punch.fbx",
-        "Animations/racingIdle.fbx",
-        "Animations/racingLeft.fbx",
-        "Animations/racingRight.fbx",
-        "Animations/run.fbx",
-        "Animations/shoot.fbx",
-        "Animations/walk.fbx"
-      ]
-    },
-    {
       "output": "Accessories/Animals/earSingle.glb",
       "input": "Accessories/Animals/earSingle.fbx"
     },
@@ -257,5 +165,8 @@
       "output": "Accessories/sword.glb",
       "input": "Accessories/sword.fbx"
     }
+  ],
+  "exclude": [
+    "Skins"
   ]
 }

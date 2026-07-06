@@ -31,6 +31,20 @@ source only) → we generate those (see `CLAUDE.md`).
 The clearest "designed to combine" content. **body × animation × skin × accessory**,
 all on one shared rig.
 
+> **⚠️ STATUS (2026-07-06): animated characters are SHELVED — accessories kept.**
+> Kenney's `Animations/*.fbx` are **mesh-less clips** authored against a *different
+> bind pose* than the `Model/` FBX, so merging them (model mesh + animation clips)
+> yields rest-pose **retargeting garbage** — T-pose with only partial motion. Proper
+> retargeting is real work for a low payoff (omnidude is cleaner, the skins are meh,
+> equip is trivial to DIY). **Decision: use omnidude for animated characters.**
+> - Character **MERGE** conversions are **off** (`scan-conversions.ts`
+>   `GENERATE_MERGES = false`); the 3 pure-character packs are excluded from the
+>   mirror, and the Bundle's `Models`/`Animations`/`Skins` too.
+> - **Accessories ARE kept** — static props that convert cleanly (single mode) and
+>   bone-attach to *any* character. The Bundle's `Accessories/` still convert + deploy.
+> - Re-enable if Kenney fixes the source, or drive from the `.blend` files (Bundle
+>   only). The reskin/equip/rig notes below stand as reference for whatever we do use.
+
 ### Packs
 
 | Pack | Body models | Animations | Skins | Notes |

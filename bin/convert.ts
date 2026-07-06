@@ -63,6 +63,11 @@ const collect = (dir: string) => {
 }
 if (existsSync(SRC)) collect(SRC)
 
+// A full run (no pack filter) regenerates the whole derived/ tree, so clear stale
+// outputs first — otherwise specs removed from metadata (e.g. shelved character
+// merges) would linger in derived/ and get mirrored past the excludes.
+if (!only) rmSync(DERIVED, { recursive: true, force: true })
+
 const sig = (files: string[]) =>
   createHash('sha256')
     .update(

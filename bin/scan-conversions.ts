@@ -74,22 +74,29 @@ const scanPack = (pack: string): Spec[] => {
   const specs: Spec[] = []
   const consumed = new Set<string>()
 
-  // merge groups: Model(s)/ + Animations/
-  const modelDir = ['Model', 'Models']
-    .map((d) => join(pack, d))
-    .find((d) => fbxIn(d).length > 0)
-  const animDir = join(pack, 'Animations')
-  const anims = fbxIn(animDir).filter((f) => uncovered.has(f))
-  if (modelDir && anims.length > 0) {
-    for (const model of fbxIn(modelDir)) {
-      specs.push({
-        output: `${stem(model)}.glb`,
-        model: rel(model),
-        animations: anims.map(rel),
-      })
-      consumed.add(model)
+  // Character MERGE generation (Model/ + Animations/ → one animated glb) is DISABLED:
+  // Kenney's animation FBX are mesh-less clips with a different bind pose than the
+  // model FBX, so the merge produces rest-pose retargeting garbage (T-pose + partial
+  // motion). Use omnidude for animated characters; re-enable (flip GENERATE_MERGES)
+  // if the source is fixed or driven from the .blend files. Accessories (single
+  // conversions below) are unaffected — they're static props. See CONTENT-MAP.md.
+  const GENERATE_MERGES = false
+  if (GENERATE_MERGES) {
+    const modelDir = ['Model', 'Models']
+      .map((d) => join(pack, d))
+      .find((d) => fbxIn(d).length > 0)
+    const anims = fbxIn(join(pack, 'Animations')).filter((f) => uncovered.has(f))
+    if (modelDir && anims.length > 0) {
+      for (const model of fbxIn(modelDir)) {
+        specs.push({
+          output: `${stem(model)}.glb`,
+          model: rel(model),
+          animations: anims.map(rel),
+        })
+        consumed.add(model)
+      }
+      anims.forEach((a) => consumed.add(a))
     }
-    anims.forEach((a) => consumed.add(a))
   }
 
   // everything else uncovered → one-to-one
