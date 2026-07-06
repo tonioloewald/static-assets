@@ -22,6 +22,7 @@ import {
   copyFileSync,
   rmSync,
   linkSync,
+  writeFileSync,
 } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -46,13 +47,14 @@ type Spec = {
   input?: string
 }
 
-const jobs: { dir: string; specs: Spec[] }[] = []
+const jobs: { dir: string; specs: Spec[]; scale: number }[] = []
 const collect = (dir: string) => {
   const mp = join(dir, 'metadata.json')
   if (existsSync(mp)) {
     const m = JSON.parse(readFileSync(mp, 'utf8'))
     if (Array.isArray(m.convert) && m.convert.length)
-      jobs.push({ dir, specs: m.convert })
+      // pack-level `scale` (uniform factor) → applied to every model in the pack.
+      jobs.push({ dir, specs: m.convert, scale: Number(m.scale) || 1 })
   }
   for (const n of readdirSync(dir)) {
     const p = join(dir, n)
@@ -69,18 +71,51 @@ const sig = (files: string[]) =>
     .digest('hex')
     .slice(0, 16)
 
+// Blender 5.0's glTF exporter won't scale on export (armature object scale is reset,
+// scene unit scale ignored), so bake a uniform scale into the exported glb by scaling
+// its scene ROOT nodes — a self-contained JSON edit that scales geometry, skeleton,
+// and animation translations together.
+const scaleGlb = (path: string, s: number): void => {
+  const buf = readFileSync(path)
+  const jsonLen = buf.readUInt32LE(12)
+  const json = JSON.parse(buf.subarray(20, 20 + jsonLen).toString('utf8'))
+  const scene = json.scenes[json.scene ?? 0]
+  for (const idx of scene.nodes) {
+    const node = json.nodes[idx]
+    if (node.matrix) {
+      for (let c = 0; c < 4; c++) for (let r = 0; r < 3; r++) node.matrix[c * 4 + r] *= s
+    } else {
+      const cur = node.scale ?? [1, 1, 1]
+      node.scale = [cur[0] * s, cur[1] * s, cur[2] * s]
+      if (node.translation) node.translation = node.translation.map((v: number) => v * s)
+    }
+  }
+  let jsonBuf = Buffer.from(JSON.stringify(json), 'utf8')
+  while (jsonBuf.length % 4 !== 0) jsonBuf = Buffer.concat([jsonBuf, Buffer.from(' ')])
+  const bin = buf.subarray(20 + jsonLen) // bin chunk (header + data), unchanged
+  const out = Buffer.alloc(20 + jsonBuf.length + bin.length)
+  buf.copy(out, 0, 0, 12) // magic + version
+  out.writeUInt32LE(out.length, 8) // total length
+  out.writeUInt32LE(jsonBuf.length, 12) // JSON chunk length
+  out.writeUInt32LE(0x4e4f534a, 16) // "JSON"
+  jsonBuf.copy(out, 20)
+  bin.copy(out, 20 + jsonBuf.length)
+  writeFileSync(path, out)
+}
+
 // Flatten specs into a task list, tagging which need a Blender build (uncached).
 type Task = {
   rel: string
   output: string
   args: string[]
+  scale: number
   cacheGlb: string
   outAbs: string
   cached: boolean
   failed?: boolean
 }
 const tasks: Task[] = []
-for (const { dir, specs } of jobs) {
+for (const { dir, specs, scale } of jobs) {
   const rel = relative(SRC, dir)
   if (only && !rel.includes(only)) continue
   for (const spec of specs) {
@@ -96,11 +131,15 @@ for (const { dir, specs } of jobs) {
       '-' +
       sig(inputs) +
       '-' +
-      createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 8)
+      createHash('sha256')
+        .update(JSON.stringify(spec) + '@' + scale)
+        .digest('hex')
+        .slice(0, 8)
     const cacheGlb = join(CACHE, key + '.glb')
     tasks.push({
       rel,
       output: spec.output,
+      scale,
       args: spec.model
         ? ['merge', cacheGlb, ...inputs]
         : ['single', inputs[0], cacheGlb],
@@ -135,6 +174,7 @@ await runPool(toBuild, JOBS, async (t) => {
       ['--background', '--factory-startup', '--python', PY, '--', ...t.args],
       { maxBuffer: 1 << 26 }
     )
+    if (t.scale !== 1) scaleGlb(t.cacheGlb, t.scale)
     built++
   } catch (e: any) {
     t.failed = true
