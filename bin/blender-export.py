@@ -105,15 +105,17 @@ def main():
             before_objs = set(bpy.context.scene.objects)
             import_any(clip)
             new_objs = [o for o in bpy.context.scene.objects if o not in before_objs]
-            new_arm = next((o for o in new_objs if o.type == "ARMATURE"), None)
 
-            # Exactly ONE action per clip: the imported armature's own action.
-            action = None
-            if new_arm and new_arm.animation_data and new_arm.animation_data.action:
-                action = new_arm.animation_data.action
-            else:
-                extra = [ac for ac in bpy.data.actions if ac not in before_actions]
-                action = extra[0] if extra else None
+            # Each Kenney animation FBX imports TWO actions: the real clip (~33 frames)
+            # AND a 2-frame "0.Targeting Pose". The armature's ACTIVE action is often
+            # the targeting pose, which would stash a static pose and drop the motion.
+            # So pick the NEW action with the LONGEST frame range — the real clip.
+            new_actions = [ac for ac in bpy.data.actions if ac not in before_actions]
+            action = max(
+                new_actions,
+                key=lambda a: a.frame_range[1] - a.frame_range[0],
+                default=None,
+            )
             if action is not None:
                 action.name = name
                 action.use_fake_user = True
@@ -131,6 +133,15 @@ def main():
         for ac in list(bpy.data.actions):
             if ac not in kept:
                 bpy.data.actions.remove(ac)
+
+        # The glTF ACTIONS exporter samples over the SCENE frame range. Our empty
+        # scene + animation-less model left it at the default ~2 frames, collapsing
+        # every clip to a single static pose. Widen it to cover the longest clip so
+        # the motion is actually captured.
+        if kept:
+            scene = bpy.context.scene
+            scene.frame_start = min(int(a.frame_range[0]) for a in kept)
+            scene.frame_end = max(int(a.frame_range[1]) for a in kept)
 
         export_glb(out)
 
