@@ -20,3 +20,6 @@ firebase-debug.log
 # Generated conversion outputs + Blender cache
 derived/
 .cache/
+
+# wrangler local cache (account id, project name) — never tracked
+.wrangler/
