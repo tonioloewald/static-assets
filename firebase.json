@@ -31,6 +31,40 @@
         ]
       },
       {
+        "source": "/quaternius/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Quaternius — Universal Animation Library + character packs"
+          },
+          {
+            "key": "license",
+            "value": "CC0 / see Quaternius' terms for the paid packs"
+          },
+          {
+            "key": "link",
+            "value": "https://quaternius.com"
+          }
+        ]
+      },
+      {
+        "source": "/speech/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "tosijs-3d — placeholder voice acting generated with Resemble / Chatterbox"
+          },
+          {
+            "key": "license",
+            "value": "Generated test/placeholder audio; not authored for redistribution"
+          },
+          {
+            "key": "link",
+            "value": "https://3d.tosijs.net"
+          }
+        ]
+      },
+      {
         "source": "/kenney/**",
         "headers": [
           {

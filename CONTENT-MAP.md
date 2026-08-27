@@ -188,6 +188,101 @@ resolved edges and places rotated instances on the grid from a binary open/close
 
 ---
 
+## ⭐ Quaternius — Universal Animation Library (UAL)
+
+**Every animation is already here.** Four megafiles under `assets/quaternius/`,
+and nothing needs re-downloading or re-exporting to get a clip we are not using
+yet — subset again with a longer list.
+
+| file | clips | size | notes |
+| --- | --- | --- | --- |
+| `UAL1.glb` | **120** | 20.4 MB | library 1, in-place |
+| `UAL1_RM.glb` | 120 | 20.4 MB | **root motion** — see below |
+| `UAL2.glb` | **134** | 19.8 MB | library 2 |
+| `UAL2_RM.glb` | 134 | 19.8 MB | root motion |
+
+Each is **one mesh, zero images, and ~75% animation data** (15.4 MB of UAL1's
+20.4 MB is animation accessors). That is why subsetting pays so well and why
+texture optimisation would not: there are no textures.
+
+### `_RM` is root motion, and is deliberately not used yet
+
+Root motion means the CLIP translates the root node. A controller that also
+moves that node — `tosijs-3d`'s `b3d-biped` moves it with `moveWithCollisions`
+and writes `position.y` for its ground snap — will fight it: the animation
+shoves one way, the controller the other. Symptoms are drift, stutter, or a
+character travelling faster than its input says.
+
+So the non-RM files are the ones to consume today. Keep the RM ones: they are
+exactly what an intent-driven locomotion model wants, where the character's
+movement comes FROM the animation rather than being painted over it (see
+`tosijs-3d/MOBILITY-DESIGN.md`).
+
+### Subsetting — a `convert` spec, no Blender
+
+It is part of the normal pipeline: a third spec shape alongside `merge` and
+`single`, so `bun run convert` (and therefore `bun run build`) produces it,
+cached by input signature and spec like everything else.
+
+```jsonc
+// assets/quaternius/metadata.json
+{ "convert": [
+  { "output": "UAL1_core.glb", "input": "UAL1.glb",
+    "clips": ["Idle_Loop", "Walk_Loop", "Jump_*"] }
+] }
+```
+
+`bin/subset-glb.ts` is also a CLI, which is how you explore:
+
+```sh
+bun bin/subset-glb.ts assets/quaternius/UAL1.glb --list          # every clip name
+bun bin/subset-glb.ts assets/quaternius/UAL1.glb \
+  derived/quaternius/UAL1_core.glb  Idle_Loop Walk_Loop 'Jump_*'  # ad-hoc subset
+```
+
+A glTF is a JSON header over a binary blob, so dropping animations is surgery on
+the header plus a rebuild of the blob — exact, fast, lossless for what it keeps,
+and it does not round-trip through Blender's importer and exporter. It also does
+not crash on packs this size, which a Blender re-export does.
+
+Names may end in `*` to keep a family. A name that matches nothing is a **fatal
+error**, not a warning: a silently-missing clip becomes a character frozen in one
+state at runtime, and tracing that back to a typo is miserable.
+
+Output goes to `derived/`, which is **gitignored** — subsets are build artifacts,
+the megafiles are the source of truth. Originals are opened read-only.
+
+### The current core subset
+
+`derived/quaternius/UAL1_core.glb` — **27 of 120 clips, 20.4 MB → 5.00 MB (75%
+smaller)**, structurally validated (accessors in bounds, skin and mesh intact):
+
+- locomotion: `Idle_Loop`, `Walk_Loop`, `Jog_Fwd/Bwd/Left/Right_Loop`,
+  `Sprint_Enter/Loop/Exit`, `Turn90_L/R`
+- crouch: `Crouch_Idle/Fwd/Bwd/Left/Right_Loop`, `Crouch_Enter/Exit`
+- jump: `Jump_Start`, `Jump_Loop`, `Jump_Land` — **split**, so a wind-up can hold,
+  an airborne loop can last as long as the flight, and landings exist
+- water: `Swim_Fwd_Loop`, `Swim_Idle_Loop`
+- misc: `A_TPose`, `Interact`, `Dance_Loop`, `Driving_Loop`
+
+**If a consumer needs a clip that is not in there, add it to the list and
+regenerate.** The whole library is sitting in `assets/`.
+
+### Worth knowing
+
+- The libraries carry a full action vocabulary beyond locomotion — combat
+  (`Sword_*`, `Punch_*`, `Pistol_*`, `Spell_*`, `Hit_*`, `Death01/02`),
+  climbing (`ClimbLedge`, `Climb_Up/Down/Left/Right_Loop`), `Crawl_*`, `Roll`,
+  `Dodge_Left/Right`, sitting, counter/shop interactions. Run `--list` before
+  assuming something needs authoring.
+- **Not yet done: precision and keyframe-rate reduction.** Rotations are float
+  quaternions at the exported sample rate; quantising and/or resampling would cut
+  the remaining animation bytes again. Subsetting was the order-of-magnitude win,
+  so this is the next lever rather than the first.
+- **`scale` is not applied to subsets.** The input is already a built glb at the
+  scale it was authored; silently resizing it on the way through would be a
+  surprise. Blender specs still honour it.
+
 ## Open questions / to-map (living log)
 
 - [ ] **Edge-mask metadata** — author `grid` + `tileRules`/`tiles` (above) for Nature,

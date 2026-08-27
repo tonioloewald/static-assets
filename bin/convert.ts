@@ -8,6 +8,7 @@
  * Spec shapes (paths relative to the metadata.json's directory):
  *   merge  { output, model, animations[] }  → one glb with named animation clips
  *   single { output, input }                → one-to-one glb
+ *   subset { output, input, clips[] }       → a glb with only those clips, NO Blender
  *
  * Caching: a spec is rebuilt only when its inputs (size+mtime) or the spec itself
  * change — so re-runs are near-instant. Set BLENDER to override the binary path.
@@ -30,6 +31,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import os from 'node:os'
 import { createHash } from 'node:crypto'
+import { subsetGlb } from './subset-glb'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SRC = join(ROOT, 'assets')
@@ -45,6 +47,12 @@ type Spec = {
   model?: string
   animations?: string[]
   input?: string
+  /**
+   * Clip names to keep from `input` (a GLB). Presence of this makes the spec a
+   * SUBSET, which is glTF surgery rather than a Blender build — see
+   * `bin/subset-glb.ts`. Names may end in `*` to keep a family.
+   */
+  clips?: string[]
 }
 
 const jobs: { dir: string; specs: Spec[]; scale: number }[] = []
@@ -112,6 +120,10 @@ const scaleGlb = (path: string, s: number): void => {
 type Task = {
   rel: string
   output: string
+  /** `subset` skips Blender entirely; see the note where the pool splits. */
+  kind: 'blender' | 'subset'
+  spec: Spec
+  inputs: string[]
   args: string[]
   scale: number
   cacheGlb: string
@@ -131,8 +143,9 @@ for (const { dir, specs, scale } of jobs) {
       console.warn(`  skip ${rel}/${spec.output} — missing input`)
       continue
     }
+    const kind: Task['kind'] = spec.clips ? 'subset' : 'blender'
     const key =
-      (spec.model ? 'merge' : 'single') +
+      (spec.clips ? 'subset' : spec.model ? 'merge' : 'single') +
       '-' +
       sig(inputs) +
       '-' +
@@ -144,6 +157,9 @@ for (const { dir, specs, scale } of jobs) {
     tasks.push({
       rel,
       output: spec.output,
+      kind,
+      spec,
+      inputs,
       scale,
       args: spec.model
         ? ['merge', cacheGlb, ...inputs]
@@ -174,12 +190,31 @@ const runPool = async <T>(items: T[], n: number, fn: (x: T) => Promise<void>) =>
 await runPool(toBuild, JOBS, async (t) => {
   console.log(`  build ${t.rel}/${t.output}`)
   try {
-    await pexec(
-      BLENDER,
-      ['--background', '--factory-startup', '--python', PY, '--', ...t.args],
-      { maxBuffer: 1 << 26 }
-    )
-    if (t.scale !== 1) scaleGlb(t.cacheGlb, t.scale)
+    if (t.kind === 'subset') {
+      /*
+      NO BLENDER. A subset is JSON surgery on a glTF plus a rebuild of its
+      binary blob, so spawning Blender would be by far the slowest part of an
+      otherwise instant operation — and Blender is exactly what falls over on
+      packs this size (Quaternius' 20 MB / 120-clip libraries crash the
+      exporter). It also cannot round-trip the data through an importer and an
+      exporter that each have opinions about it.
+
+      `scale` is deliberately NOT applied: the input is already a built glb at
+      the scale it was authored, and a subset must not silently resize it.
+      */
+      const r = await subsetGlb(t.inputs[0], t.cacheGlb, t.spec.clips!)
+      console.log(
+        `    ${r.total} → ${r.kept} clips, ` +
+          `${(r.from / 1048576).toFixed(1)} → ${(r.to / 1048576).toFixed(2)} MB`
+      )
+    } else {
+      await pexec(
+        BLENDER,
+        ['--background', '--factory-startup', '--python', PY, '--', ...t.args],
+        { maxBuffer: 1 << 26 }
+      )
+      if (t.scale !== 1) scaleGlb(t.cacheGlb, t.scale)
+    }
     built++
   } catch (e: any) {
     t.failed = true
