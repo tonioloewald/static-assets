@@ -1,17 +1,3 @@
 {
-  "exclude": [
-    "**/Unity/**",
-    "**/Unreal/**",
-    "**/*.unitypackage",
-    "**/*.uasset",
-    "**/*.meta",
-    "**/Thumbs.db",
-    "**/.DS_Store",
-    "*.fbx",
-    "*.obj",
-    "*.blend",
-    "*.html",
-    "*.url",
-    "*.txt"
-  ]
+  "note": "Publishing is an ALLOWLIST. Nothing under assets/ is served unless a `publish` glob in some metadata.json names it, so this root file needs no rules — the old list of engine-junk excludes (Unity/, *.unitypackage, *.meta …) is gone because junk no longer has to be enumerated to be kept off the CDN. What ships is derived/: built output from bin/convert.ts plus whatever `publish` pushes in. `exclude` still exists, but only to carve holes out of a `publish` glob."
 }

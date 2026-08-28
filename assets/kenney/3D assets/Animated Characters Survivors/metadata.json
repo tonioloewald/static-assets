@@ -1,1 +1,4 @@
-{}
+{
+  "shelved": true,
+  "note": "Shelved — retargeting-broken (see CONTENT-MAP.md). `shelved` stops `scan --write` from regenerating specs for it."
+}

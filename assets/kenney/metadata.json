@@ -6,16 +6,5 @@
     "patreon": "https://patreon.com/kenney",
     "link": "https://kenney.nl"
   },
-  "exclude": [
-    "Archive",
-    "Preview*",
-    "FBX format",
-    "OBJ format",
-    "DAE format",
-    "2D assets",
-    "Icons",
-    "Animated Characters Protagonists",
-    "Animated Characters Retro",
-    "Animated Characters Survivors"
-  ]
+  "note": "No `publish` rules on purpose: NOTHING under assets/kenney/ is served from source. What serves under /kenney/ is built — the per-kit libraries in derived/kenney/libraries/. These headers still apply to those paths, so credit and licence ride on every byte. Adding a `publish` glob here would put a slice of a creator's paid bundle on the CDN; build a library instead."
 }

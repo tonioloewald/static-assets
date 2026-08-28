@@ -1,16 +1,25 @@
 #!/usr/bin/env bun
 /**
- * mirror — stage `assets/` → `public/` (the deployable tree) and regenerate
- * `firebase.json`, both driven by `metadata.json` files so there's ONE source of
- * truth.
+ * mirror — assemble the deployable tree and regenerate the host config, both
+ * driven by `metadata.json` files so there's ONE source of truth.
+ *
+ * `derived/` is the shipped tree. Two things put files in it: `bin/convert.ts`
+ * BUILDS into it (libraries, conversions, subsets), and a `publish` glob in a
+ * metadata.json PUSHES source files into it. `public/` is then that tree plus the
+ * generated host config. Source trees are never walked for content to serve — if
+ * it is not built and not pushed, it does not exist as far as the CDN is
+ * concerned, which is the property that keeps a creator's bundle off the web by
+ * construction rather than by vigilance.
  *
  * `metadata.json` may sit in ANY directory under `assets/` and is OVERLAID as you
  * descend the tree — a child's values merge over its ancestors' (headers per-key;
  * excludes accumulate). Fields (all optional):
  *
- *   exclude: string[]   globs (relative to the declaring dir; double-star spans
- *                       `/`) of files/dirs NOT to mirror — e.g. `Archive`,
- *                       `Unity/**`. A plain name prunes the whole folder. Accumulate.
+ *   publish: string[]   globs (relative to the declaring dir; double-star spans
+ *                       `/`) of files TO ship — e.g. `*.mp3`, `characters/**`.
+ *                       Nothing ships unless a publish glob names it. Accumulate.
+ *   exclude: string[]   globs carving holes out of an inherited `publish`.
+ *                       Accumulate.
  *   copyright/credit/   convenience attribution; each becomes a literal response
  *   attribution/license header of the same (lowercase) name.
  *   link: string        a URL → a proper `Link: <url>; rel="author"` header.
@@ -21,9 +30,9 @@
  * header — so credit/copyright/license/link travel with every byte, inspectable
  * via `curl -I`, no per-file work.
  *
- * Included files are HARDLINKED into `public/` (no disk duplication on one volume;
- * copy fallback). `public/` and `firebase.json` are generated — edit the
- * `metadata.json` files, not them. Run `bun run build`.
+ * Included files are HARDLINKED (no disk duplication on one volume; copy
+ * fallback). `derived/`, `public/` and `firebase.json` are all generated — edit
+ * the `metadata.json` files, not them. Run `bun run build`.
  */
 import {
   readdirSync,
@@ -40,6 +49,7 @@ import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 type Meta = {
+  publish?: string[]
   exclude?: string[]
   headers?: Record<string, string>
   copyright?: string
@@ -96,22 +106,47 @@ const foldHeaders = (m: Meta): Record<string, string> => {
 
 type Rule = { path: string; headers: Record<string, string> }
 const rules: Rule[] = []
+let pushed = 0
 let files = 0
 let hardlinked = 0
 
+const link = (from: string, to: string): void => {
+  mkdirSync(dirname(to), { recursive: true })
+  try {
+    rmSync(to, { force: true })
+    linkSync(from, to)
+    hardlinked++
+  } catch {
+    copyFileSync(from, to)
+  }
+}
+
+/**
+ * Walk `assets/` to collect the header rules and to PUSH published files into
+ * `derived/`.
+ *
+ * Publishing is an ALLOWLIST: a file ships only because a `publish` glob named
+ * it. Nothing is served for merely existing. This used to be the other way round
+ * — everything shipped unless an `exclude` caught it — which put a creator's
+ * entire bundle one forgotten pattern away from the CDN, and quietly published
+ * whatever new folder appeared in a pack. `exclude` survives only to carve holes
+ * out of a `publish` glob.
+ *
+ * Both accumulate down the tree, anchored to the directory that declared them.
+ */
 const walk = (
   dir: string,
   inheritedHeaders: Record<string, string>,
+  publishes: RegExp[],
   excludes: RegExp[]
 ): void => {
   const rel = toPosix(relative(SRC, dir))
   const local = loadMeta(dir)
 
+  const localPub = (local?.publish ?? []).map((g) => globToRe(g, rel))
   const localEx = (local?.exclude ?? []).map((g) => globToRe(g, rel))
+  const activePub = localPub.length ? [...publishes, ...localPub] : publishes
   const activeEx = localEx.length ? [...excludes, ...localEx] : excludes
-  const excluded = (p: string) => activeEx.some((re) => re.test(p))
-  // Prune the whole dir if it — or its contents — are excluded.
-  if (rel !== '' && (excluded(rel) || excluded(rel + '/__probe__'))) return
 
   const localHeaders = local ? foldHeaders(local) : {}
   const effective = { ...inheritedHeaders, ...localHeaders }
@@ -119,43 +154,38 @@ const walk = (
     rules.push({ path: rel, headers: effective })
   }
 
-  for (const name of readdirSync(dir)) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const name = entry.name
     if (name === 'metadata.json') continue // build input, not a served asset
+    if (name.startsWith('.')) continue // .DS_Store and friends are never assets
     const abs = join(dir, name)
-    if (statSync(abs).isDirectory()) {
-      walk(abs, effective, activeEx)
+    if (entry.isDirectory()) {
+      walk(abs, effective, activePub, activeEx)
     } else {
       const relChild = toPosix(relative(SRC, abs))
-      if (excluded(relChild)) continue
-      const dest = join(OUT, relChild)
-      mkdirSync(dirname(dest), { recursive: true })
-      try {
-        linkSync(abs, dest)
-        hardlinked++
-      } catch {
-        copyFileSync(abs, dest)
-      }
-      files++
+      if (!activePub.some((re) => re.test(relChild))) continue
+      if (activeEx.some((re) => re.test(relChild))) continue
+      link(abs, join(DERIVED, relChild))
+      pushed++
     }
   }
 }
 
-// Overlay the generated conversions (already filtered) — a plain recursive copy.
+/**
+ * `derived/` IS the shipped tree — built output plus whatever `publish` pushed
+ * into it — so staging it is a copy, with no second opinion about what belongs.
+ * To stop serving something, stop building or pushing it; there is no filter
+ * here to forget.
+ */
 const stageTree = (root: string): void => {
   if (!existsSync(root)) return
   const rec = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const abs = join(dir, name)
-      if (statSync(abs).isDirectory()) rec(abs)
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue
+      const abs = join(dir, entry.name)
+      if (entry.isDirectory()) rec(abs)
       else {
-        const dest = join(OUT, toPosix(relative(root, abs)))
-        mkdirSync(dirname(dest), { recursive: true })
-        try {
-          linkSync(abs, dest)
-          hardlinked++
-        } catch {
-          copyFileSync(abs, dest)
-        }
+        link(abs, join(OUT, toPosix(relative(root, abs))))
         files++
       }
     }
@@ -165,7 +195,7 @@ const stageTree = (root: string): void => {
 
 rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
-if (existsSync(SRC)) walk(SRC, {}, [])
+if (existsSync(SRC)) walk(SRC, {}, [], [])
 else console.warn('mirror: no assets/ directory yet — nothing to stage.')
 stageTree(DERIVED)
 
@@ -210,6 +240,7 @@ const firebase = {
 writeFileSync(join(ROOT, 'firebase.json'), JSON.stringify(firebase, null, 2) + '\n')
 
 console.log(
-  `mirror: ${files} file(s) staged (${hardlinked} hardlinked) · ` +
-    `${rules.length} attributed namespace(s) → _headers + firebase.json`
+  `mirror: ${pushed} pushed → derived/, ${files} file(s) staged → public/ ` +
+    `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s) ` +
+    `→ _headers + firebase.json`
 )
