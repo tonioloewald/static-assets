@@ -398,6 +398,121 @@ glb.set(binOut, binHeader + 8)
 }
 
 /**
+ * **Graft clips from another GLB onto this one.** Mutates `json`/returns the
+ * combined binary; the caller then subsets as usual, so the existing pruning
+ * compacts whatever this adds.
+ *
+ * ## Why this is safe HERE and not in general
+ *
+ * An animation channel targets a node by INDEX, so clips are only portable
+ * between files that agree about their nodes. Verified for the Quaternius UAL
+ * pair before writing this, and the answer was unusually clean: both files have
+ * 67 nodes and 65 joints, identical names in identical order, and **zero
+ * bind-pose differences** across every node. So the two megafiles are one rig
+ * cut in half, and a merge is bookkeeping rather than retargeting.
+ *
+ * It still maps by NAME rather than trusting the order, because the check is
+ * nearly free and the failure it prevents is the bad kind: a wrong index does
+ * not throw, it animates the wrong bone.
+ *
+ * A source whose skeleton genuinely differs needs retargeting, which this is
+ * not and should not quietly pretend to be — hence the throw on an unknown
+ * node name.
+ */
+function graftClips(
+  json: Gltf,
+  bin: Uint8Array,
+  from: Gltf,
+  fromBin: Uint8Array,
+  clips: string[],
+  label: string
+): Uint8Array {
+  const anims = (from.animations ?? []).filter((a: any) =>
+    clips.some((c) =>
+      c.endsWith('*') ? (a.name ?? '').startsWith(c.slice(0, -1)) : a.name === c
+    )
+  )
+  const missing = clips
+    .filter((c) => !c.endsWith('*'))
+    .filter((c) => !(from.animations ?? []).some((a: any) => a.name === c))
+  if (missing.length) {
+    throw new Error(`${label}: no such clip(s): ${missing.join(', ')}`)
+  }
+
+  // Node name → index in the DESTINATION.
+  const index = new Map<string, number>()
+  ;(json.nodes ?? []).forEach((n: any, i: number) => {
+    if (n.name) index.set(n.name, i)
+  })
+
+  // One combined buffer: destination bytes, then source bytes. New bufferViews
+  // point into the second half. `buildSubset` prunes what nothing references,
+  // so being generous here costs only peak memory, not output size.
+  const pad = (4 - (bin.byteLength % 4)) % 4
+  const base = bin.byteLength + pad
+  const combined = new Uint8Array(base + fromBin.byteLength)
+  combined.set(bin, 0)
+  combined.set(fromBin, base)
+
+  const views: any[] = (json.bufferViews ??= [])
+  const accessors: any[] = (json.accessors ??= [])
+  const copied = new Map<number, number>()
+  const copyAccessor = (srcIndex: number): number => {
+    const hit = copied.get(srcIndex)
+    if (hit !== undefined) return hit
+    const acc = (from.accessors ?? [])[srcIndex]
+    if (acc == null) throw new Error(`${label}: missing accessor ${srcIndex}`)
+    if (acc.sparse != null) {
+      throw new Error(`${label}: sparse accessors are not supported by graft`)
+    }
+    const srcView = (from.bufferViews ?? [])[acc.bufferView]
+    if (srcView == null) {
+      throw new Error(`${label}: accessor ${srcIndex} has no bufferView`)
+    }
+    views.push({
+      ...srcView,
+      buffer: 0,
+      byteOffset: (srcView.byteOffset ?? 0) + base,
+    })
+    accessors.push({ ...acc, bufferView: views.length - 1 })
+    const at = accessors.length - 1
+    copied.set(srcIndex, at)
+    return at
+  }
+
+  const existing = new Set(
+    (json.animations ?? []).map((a: any) => a.name).filter(Boolean)
+  )
+  const added: string[] = []
+  for (const anim of anims) {
+    if (existing.has(anim.name)) continue // primary wins; only A_TPose collides
+    const samplers = (anim.samplers ?? []).map((sm: any) => ({
+      ...sm,
+      input: copyAccessor(sm.input),
+      output: copyAccessor(sm.output),
+    }))
+    const channels = (anim.channels ?? []).map((ch: any) => {
+      const srcNode = (from.nodes ?? [])[ch.target?.node]
+      const name = srcNode?.name
+      const to = name != null ? index.get(name) : undefined
+      if (to === undefined) {
+        // Never guess. A wrong index animates the wrong bone silently.
+        throw new Error(
+          `${label}: clip "${anim.name}" targets node "${name ?? ch.target?.node}", which the destination does not have`
+        )
+      }
+      return { ...ch, target: { ...ch.target, node: to } }
+    })
+    ;(json.animations ??= []).push({ ...anim, samplers, channels })
+    added.push(anim.name)
+  }
+  if (process.env.SUBSET_DEBUG) {
+    console.log(`    [debug] grafted ${added.length} clips from ${label}`)
+  }
+  return combined
+}
+
+/**
  * Write a GLB containing only the named clips. Returns what it did, so a caller
  * (the convert pipeline) can report without re-reading the file.
  *
@@ -407,12 +522,30 @@ glb.set(binOut, binHeader + 8)
 export async function subsetGlb(
   src: string,
   out: string,
-  clips: string[]
+  clips: string[],
+  /**
+   * Extra sources to take clips from — see `graftClips`. The FIRST source is
+   * still the one that supplies the mesh, skin and skeleton; these contribute
+   * animation only.
+   *
+   * This exists because Quaternius splits its library across two megafiles and
+   * the clips you want are not all in one: `ClimbLedge` is in UAL1,
+   * `ClimbUp_1m`/`_2m` in UAL2. Without it the choice was to ship two GLBs and
+   * make the consumer load both.
+   */
+  merge: Array<{ input: string; clips: string[] }> = []
 ): Promise<{ from: number; to: number; kept: number; total: number }> {
-  const { json, bin } = await loadGlb(src)
+  const loaded = await loadGlb(src)
+  const json = loaded.json
+  let bin = loaded.bin
+  for (const m of merge) {
+    const other = await loadGlb(m.input)
+    bin = graftClips(json, bin, other.json, other.bin, m.clips, m.input)
+  }
   const anims = json.animations ?? []
+  const all = [...clips, ...merge.flatMap((m) => m.clips)]
   const wanted = (name: string) =>
-    clips.some((c) =>
+    all.some((c) =>
       c.endsWith('*') ? name.startsWith(c.slice(0, -1)) : name === c
     )
   const kept = anims.filter((a) => wanted(a.name ?? ''))

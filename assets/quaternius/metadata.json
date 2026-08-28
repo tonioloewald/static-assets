@@ -1,42 +1,59 @@
 {
-  "headers": {
-    "credit": "Quaternius \u2014 Universal Animation Library + character packs",
-    "license": "CC0 / see Quaternius' terms for the paid packs",
-    "link": "https://quaternius.com"
-  },
-  "convert": [
+ "headers": {
+  "credit": "Quaternius \u2014 Universal Animation Library + character packs",
+  "license": "CC0 / see Quaternius' terms for the paid packs",
+  "link": "https://quaternius.com"
+ },
+ "convert": [
+  {
+   "output": "UAL1_core.glb",
+   "input": "UAL1.glb",
+   "clips": [
+    "A_TPose",
+    "Idle_Loop",
+    "Walk_Loop",
+    "Jog_Fwd_Loop",
+    "Jog_Bwd_Loop",
+    "Jog_Left_Loop",
+    "Jog_Right_Loop",
+    "Sprint_Enter",
+    "Sprint_Loop",
+    "Sprint_Exit",
+    "Turn90_L",
+    "Turn90_R",
+    "Crouch_Enter",
+    "Crouch_Exit",
+    "Crouch_Idle_Loop",
+    "Crouch_Fwd_Loop",
+    "Crouch_Bwd_Loop",
+    "Crouch_Left_Loop",
+    "Crouch_Right_Loop",
+    "Jump_Start",
+    "Jump_Loop",
+    "Jump_Land",
+    "Swim_Fwd_Loop",
+    "Swim_Idle_Loop",
+    "Interact",
+    "Dance_Loop",
+    "Driving_Loop",
+    "ClimbLedge",
+    "Climb_Enter",
+    "Climb_Exit"
+   ],
+   "merge": [
     {
-      "output": "UAL1_core.glb",
-      "input": "UAL1.glb",
-      "clips": [
-        "A_TPose",
-        "Idle_Loop",
-        "Walk_Loop",
-        "Jog_Fwd_Loop",
-        "Jog_Bwd_Loop",
-        "Jog_Left_Loop",
-        "Jog_Right_Loop",
-        "Sprint_Enter",
-        "Sprint_Loop",
-        "Sprint_Exit",
-        "Turn90_L",
-        "Turn90_R",
-        "Crouch_Enter",
-        "Crouch_Exit",
-        "Crouch_Idle_Loop",
-        "Crouch_Fwd_Loop",
-        "Crouch_Bwd_Loop",
-        "Crouch_Left_Loop",
-        "Crouch_Right_Loop",
-        "Jump_Start",
-        "Jump_Loop",
-        "Jump_Land",
-        "Swim_Fwd_Loop",
-        "Swim_Idle_Loop",
-        "Interact",
-        "Dance_Loop",
-        "Driving_Loop"
-      ]
+     "input": "UAL2.glb",
+     "clips": [
+      "ClimbUp_1m",
+      "ClimbUp_2m",
+      "SafetyVault"
+     ]
     }
-  ]
+   ]
+  }
+ ],
+ "note": "The UAL megafiles are build INPUTS, not deliverables \u2014 20 MB each, of which three quarters is animation data any given app will not play. What publishes is the curated subset in derived/. Re-cut a different subset by editing `convert` rather than by serving the source. Clips are split across BOTH megafiles (ClimbLedge is UAL1, ClimbUp_1m/2m are UAL2), so `merge` grafts the UAL2 ones onto UAL1's skeleton \u2014 safe because the two share it exactly: identical node and joint lists, identical order, zero bind-pose differences, verified before it was built.",
+ "exclude": [
+  "UAL*.glb"
+ ]
 }
