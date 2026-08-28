@@ -573,7 +573,24 @@ export class Builder {
       ...(clips.length ? { clips } : {}),
     }
     const size = this.measure(wrapper)
-    if (size) item.size = size
+    if (size) {
+      item.size = size
+      /*
+      ON THE NODE TOO, not only in the scene index.
+
+      Reported from the tosijs-3d side: size was the one field a consumer could
+      not see, because engines differ on what they expose. three.js hands back
+      scene-level extras as `gltf.scene.userData`, but Babylon surfaces extras as
+      per-node `metadata` — so an app holding a node could read its category and
+      tags and not its dimensions, which is exactly the field you need to answer
+      "does this fit in that gap" without instantiating candidates to find out.
+
+      The index keeps its copy: it is what makes the catalogue readable from the
+      head of the file without touching geometry. The duplication is a few bytes
+      per model against a library measured in megabytes.
+      */
+      this.json.nodes![wrapper].extras.size = size
+    }
     this.items.push(item)
     return item
   }

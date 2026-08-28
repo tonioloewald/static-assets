@@ -290,11 +290,16 @@ index in `extras` — standard glTF, no extension:
 | Where | What | three.js |
 | --- | --- | --- |
 | `scenes[0].extras.library` | `{ count, categories: {name: n}, items: [...] }` | `gltf.scene.userData.library` |
-| each root node's `extras` | `{ category, tags[], clips[]? }` | `object.userData` |
+| each root node's `extras` | `{ category, tags[], size[], clips[]? }` | `object.userData` (Babylon: `node.metadata`) |
 | `asset.extras` | credit / license / link | `gltf.asset.extras` |
 
 Each item is `{ name, category, tags[], size[], clips[]? }` — `size` being the
 world-space bounding box, which is what you need to place a thing on a grid.
+**The same fields ride on each node**, deliberately duplicated: engines differ on
+what they expose. three.js hands back scene extras as `gltf.scene.userData`, but
+Babylon surfaces extras per-node as `metadata`, so a consumer holding a node could
+otherwise read its category and not its dimensions — the one field that answers
+"does this fit in that gap" without instantiating candidates to find out.
 `extras` is in the JSON chunk at the FRONT of the glb (9% of the bytes), so a
 consumer can range-request the head of the file and read the whole catalogue
 without pulling any geometry.
