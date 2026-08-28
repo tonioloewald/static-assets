@@ -21,19 +21,27 @@ textures, audio, …) for tosijs.net projects. It keeps heavy binaries OUT of ev
 consuming repo (e.g. `tosijs-3d`), which reference assets by URL instead. One repo
 holds the assets + the tooling to publish them; everything else just links in.
 
-See **`CONTENT-MAP.md`** for a living map of the *content* (how Kenney's assets are
-organized and snap together — reskin/equip conventions, the character kit, etc.).
+See **`CONTENT-MAP.md`** for a living map of the *content* (how the Kenney and
+Quaternius assets are organized and snap together — reskin/equip conventions, the
+character kit, modular-kit grids, which animation clips the subsets keep).
 This file is about the *tooling*.
 
 ## Commands
 
 - `bun run scan` — discover source models with no glb and write `convert` specs into
-  each pack's `metadata.json` (dry-run; add `--write` to apply). See Conversion below.
+  each pack's `metadata.json` (dry-run; add `--write` to apply). Hard-coded to
+  `assets/kenney/3D assets/` (`PACKS_ROOT` in the script). See Conversion below.
+- `bun run scan --libraries` — the same tree, different question: every pack that
+  ships a folder of individual models gets a `library` spec so it publishes as ONE
+  glb. Fills in `slug`/`from` only; hand-authored curation survives. See Libraries.
 - `bun run convert` — execute those specs via Blender (cached) → `derived/`.
-- `bun run build` — `convert`, then stage `assets/` + `derived/` → `public/` and
-  regenerate the host config (`public/_headers` + `public/robots.txt` + `firebase.json`).
-- `bun run deploy` — build, then `wrangler pages deploy public` (**Cloudflare Pages**).
-- `bun run deploy:firebase` — build, then `firebase deploy --only hosting` (fallback).
+- `bun run build` — `convert`, then push `publish`-ed sources into `derived/`, stage
+  `derived/` → `public/`, and regenerate the host config (`public/_headers` +
+  `public/robots.txt` + `firebase.json`).
+- `bun run deploy` — build, then `bunx wrangler pages deploy public --project-name
+  cdn-tosijs` (**Cloudflare Pages**).
+- `bun run deploy:firebase` — build, then `bunx firebase-tools deploy --only hosting`
+  (fallback).
 
 **Host is a deploy/DNS choice, not a rebuild.** `public/` is identical either way;
 `mirror.ts` emits both a Cloudflare `_headers` file and a `firebase.json` from the same
@@ -49,16 +57,19 @@ publish is driven by `metadata.json` — you rarely touch anything else.
 | `assets/` | **Source** tree, namespaced: `assets/kenney/…`, `assets/<pack>/…`. |
 | `assets/**/metadata.json` | Per-directory config (attribution + filtering). **Committed.** |
 | `assets/**` (binaries) | The actual asset files. **NOT committed** (see `.gitignore`) — they live on disk locally and are mirrored to the host. |
-| `public/` | **Generated** deployable (gitignored). `build` hardlinks the included assets here. |
+| `public/` | **Generated** deployable (gitignored) — `derived/` plus the host config, nothing else. |
 | `public/_headers` | **Generated** Cloudflare Pages/Netlify header rules (from metadata). |
 | `public/robots.txt` | **Generated** `Disallow: /` (reinforces the `noindex` header). |
 | `firebase.json` | **Generated** Firebase Hosting config + headers (fallback host). Don't hand-edit. |
-| `derived/` | **Generated** glb from conversion (gitignored); overlaid into `public/`. |
+| `derived/` | **Generated, and IS the shipped tree** (gitignored): built output + `publish`-ed sources. If it's here, it ships. |
+| `derived/<pack>/libraries/` | **Generated** per-kit libraries — the main thing served. |
 | `.cache/` | Blender conversion cache keyed by input signature (gitignored). |
-| `bin/mirror.ts` | Stages `assets/` + `derived/` → `public/`, generates `firebase.json`. |
+| `bin/mirror.ts` | Pushes `publish`-ed sources into `derived/`, stages `derived/` → `public/`, generates host config. |
 | `bin/scan-conversions.ts` | Discovers uncovered models, writes `convert` specs into metadata. |
 | `bin/convert.ts` | Runs `convert` specs via Blender (cached) → `derived/`. |
 | `bin/blender-export.py` | Blender headless: fbx/blend → glb, with animation merging. |
+| `bin/subset-glb.ts` | glTF surgery: drop animations from a glb (no Blender). Library + CLI. |
+| `bin/library-glb.ts` | glTF surgery: merge a pack of models into one glb, and cut subsets of it. Library + CLI. |
 | `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |
 
 Because binaries aren't in git, a fresh clone has the *manifest* (metadata.json +
@@ -73,17 +84,26 @@ per-key, excludes accumulate). All fields optional; add more over time.
 
 | Field | Effect |
 | --- | --- |
-| `exclude: string[]` | Globs (relative to the declaring dir; `**` spans `/`) of files/dirs NOT to mirror. Accumulate down the tree. Use to drop engine junk (`**/Unity/**`, `**/*.unitypackage`). |
+| `publish: string[]` | Globs (relative to the declaring dir; `**` spans `/`) of files TO ship — pushed into `derived/`. **Nothing is served unless a publish glob names it.** Accumulate down the tree. |
+| `exclude: string[]` | Globs carving holes out of an inherited `publish`. Accumulate. Not a safety net — the allowlist is. |
+| `shelved: true` | This pack is deliberately not built or shipped; `scan` skips it instead of regenerating its specs. |
 | `copyright` / `credit` / `attribution` / `license` | Convenience attribution; each becomes a literal response header of the same (lowercase) name on every file served from this namespace. |
 | `link` | A URL → a proper `Link: <url>; rel="author"` response header. |
 | `headers: { name: value }` | Escape hatch — **any** key→value is emitted as a response header verbatim (overrides the convenience fields on key collision). |
+| `convert: Spec[]` | Conversion specs for this directory — see Conversion below. Not inherited (each declaring dir owns its own). |
+| `library: { slug, from[], categories?, exclude?, subsets? }` | Pack this directory's models into one glb at `/<namespace>/libraries/<slug>.glb`. See Libraries below. Not inherited. |
+| `scale: number` | Uniform factor baked into every **Blender-built** glb of this pack (Kenney's Bundle is `0.48` → ~1 unit/metre). Applied by scaling the exported scene's root nodes; deliberately **not** applied to `subset` specs, whose input is an already-built glb. |
 
 **The core idea:** whatever ends up in a path's effective header set IS set as a
 response header — so credit/copyright/license/link travel with every byte,
 inspectable via `curl -I`, with zero per-file work.
 
-Root `assets/metadata.json` holds the global excludes (engine junk). Each pack dir
-(e.g. `assets/kenney/metadata.json`) holds its attribution.
+Each pack dir (e.g. `assets/kenney/metadata.json`) holds its attribution. Packs
+today: `kenney` (3D — publishes nothing from source, only built libraries),
+`quaternius` (animation libraries; UAL megafiles are inputs, characters/hairstyles
+are pushed as-is), `speech` (placeholder VO). Root `assets/metadata.json` needs no
+rules at all now: under an allowlist, junk does not have to be enumerated to be
+kept off the CDN.
 
 `metadata.json` is also the home for **app-level semantics** the filenames don't
 capture — e.g. modular-kit `grid` + tile connectivity (`tileRules`/`tiles`) so maps
@@ -113,44 +133,191 @@ reproducible — the *spec* is versioned even though the binaries aren't:
      stashes each clip's action on the shared rig, exports GLB). Ready for
      `b3dBiped`'s animation state machine.
    - `single` (`input`) → a one-to-one glb (static accessories, etc.).
+   - `subset` (`input` + `clips[]`) → a glb keeping only those animations,
+     **without Blender** — `bin/subset-glb.ts` rewrites the glTF JSON and rebuilds
+     the binary chunk, dropping the accessors/bufferViews nothing live references.
+     Clip names may end in `*` to keep a family (`Climb_*`). This is how the
+     Quaternius animation megafiles are cut down (20.4 MB → 5 MB); see
+     `CONTENT-MAP.md` for which clips and why. As a CLI:
+     `bun bin/subset-glb.ts <src.glb> --list` / `… <src.glb> <out.glb> <clip…>`.
 
-2. `bun run convert` executes each spec with **Blender headless** (`BLENDER` env var
-   overrides the path), caches by input signature (`.cache/`), and writes results to
+2. `bun run convert` executes each spec — `merge`/`single` through **Blender headless**
+   (`BLENDER` env var overrides the path), `subset` in-process — caching by input signature (`.cache/`), and writes results to
    `derived/<same path>/…glb`. Re-runs are near-instant. Limit to a pack:
-   `bun bin/convert.ts Protagonists`.
+   `bun bin/convert.ts Protagonists` (arg = substring match on the spec's dir path).
+   A *full* run wipes `derived/` first, so a spec deleted from `metadata.json`
+   stops being served instead of lingering as an orphan — a pack-filtered run
+   does not, so re-run without the arg when you remove specs.
 
-3. `bin/mirror.ts` overlays `derived/` into `public/`, so converted glb serve at
-   their logical path (`/kenney/3D assets/…/characterMedium.glb`) with the pack's
-   attribution headers — same as any other asset.
+3. `bin/mirror.ts` stages `derived/` into `public/`, so converted glb serve at their
+   logical path with the pack's attribution headers — same as any other asset.
+   Note this means **building something publishes it**; see Publishing.
 
 `derived/` and `.cache/` are generated (gitignored). The 23 `.blend` files are the
 Bundle's *sources* for its fbx (already exported), so we convert the fbx and ignore
-the blends. Requires Blender (`/Applications/Blender.app` on macOS).
+the blends. The fbx paths need Blender (`/Applications/Blender.app` on macOS);
+`subset` needs nothing but Bun.
+
+## Publishing — `derived/` IS what ships
+
+There are exactly two ways a byte reaches the CDN:
+
+1. **Built** — `bin/convert.ts` writes it into `derived/` (a library, a conversion,
+   a subset).
+2. **Pushed** — a `publish` glob in some `metadata.json` hardlinks it from
+   `assets/` into `derived/`.
+
+`public/` is then `derived/` plus the generated host config, and nothing else.
+Source trees are never walked for content to serve. **To stop shipping something,
+stop building or pushing it** — there is no filter to remember.
+
+This replaced a blocklist, and the reason is worth keeping: everything used to ship
+*unless* an `exclude` caught it, which put a creator's paid bundle one forgotten
+pattern away from the CDN and silently published whatever new folder appeared in a
+pack. Concretely, the old rules would have served **15,020 files** from Kenney
+alone; the allowlist serves **206** — libraries, the Quaternius character/hairstyle
+models, and the speech clips. That is also a hosting fact, not just a tidiness one:
+Cloudflare Pages caps a deployment at **20,000 files** (and 25 MiB per file), so the
+old model was at 75% of a hard limit from one pack, with every new pack pushing
+toward a failed deploy. The largest thing we now ship is a 7.5 MB library.
+
+`exclude` still exists, but only to carve a hole out of an inherited `publish` — it
+is a refinement, not a safeguard. And a pack marked `"shelved": true` is skipped by
+`scan`, so a later `--write` cannot quietly regenerate specs for content that was
+deliberately withdrawn (which, now that building means shipping, would republish it).
 
 ## Ethics — why it's built this way (keep it this way)
 
 Assets like Kenney's are typically **CC0** — legally redistributable — but we do NOT
 want to become a free *mirror* of a creator's paid bundle. The safeguards, all cheap:
 
+- **Allowlist, not blocklist.** Nothing is served for merely existing on disk; it
+  ships because it was built or explicitly pushed. Keeping a creator's bundle off
+  the web is a property of the design, not a matter of remembering to exclude it.
 - **No front door.** Static hosting 404s on directories (no listing), and every
   response carries `X-Robots-Tag: noindex` — so the assets aren't browsable or
   searchable as a set.
-- **No public catalog.** Never publish a complete manifest/index of a namespace.
-  Consuming apps reference only the specific assets they use — so you'd need the
-  original bundle to know the paths. Files are *usable* by apps, not *harvestable*.
+- **No public catalog.** Never publish a complete manifest/index of a namespace —
+  no index file, no directory listing, nothing that enumerates what exists.
+  Consuming apps reference only the specific assets they use. Files are *usable*
+  by apps, not *harvestable*.
+- **A library indexes itself, and nothing else.** Each library glb carries a
+  catalogue of its OWN contents in `extras` — which adds no exposure, since you
+  already hold that content once you have the file — and it is deliberately
+  written as part of the glb rather than as a sidecar `.json`, which WOULD be a
+  published manifest. Source paths are never recorded in it: a library says who
+  made this content, not where to go looking for the rest of it.
+- **Consolidation is a real trade, made knowingly.** 5,108 obscure paths became 48
+  guessable ones, which is the point (that is what makes them usable) and does
+  raise the payoff of a lucky guess. It stays acceptable because none of it is
+  listed, indexed or linked, and every byte carries its attribution. If that ever
+  feels too generous, the cheap next step is a content-hash in the filename —
+  unguessable URLs, with consumers getting them from a pinned constant.
 - **Attribution travels.** Credit + license + author link ride in the response
   headers of every file; consumer docs should credit and link the creators too.
 
 When you add a pack, preserve this: attribution in `metadata.json`, no public
-catalog, and only mirror what's actually used/wanted.
+catalog, and only ship what's actually used/wanted. The default for a new pack is
+a library and no `publish` at all.
+
+## Libraries (a pack → one glb)
+
+**This is what `/kenney/` actually serves.** Kenney ships a kit as hundreds of
+individual glb — Nature Kit is 329 files, Brick Kit 296 — and those files are not
+even self-contained: each one re-declares the same material and points at an
+*external* `Textures/colormap.png` that only resolves because the texture folder
+ships beside it. A library is that same content as one file: every source model
+becomes ONE named root node, and everything they share (textures, materials,
+samplers, byte-identical geometry) is stored once.
+
+Measured over all 48 kits: **5,108 models in 48 files, 101 MB** — 18% fewer bytes
+than the 124 MB of source model folders, and two orders of magnitude fewer
+requests. The bytes are the small win; the request count and the shared texture
+are the real ones. Kits repeat themselves most where it counts: Blocky Characters
+70% smaller, Cube Pets 50%, Car Kit 45%.
+
+`bin/library-glb.ts` does it as **glTF surgery, not Blender** — same reasoning as
+`subset-glb.ts`: a glTF is a JSON header over a binary blob, so merging is index
+remapping plus buffer concatenation. Exact, fast, lossless; nothing is resampled
+or re-authored, and every surviving byte of geometry is bit-identical to source.
+Builds are deterministic (verified: wiping the cache reproduces all 49 outputs
+byte-for-byte).
+
+### The spec
+
+Lives in the kit's own `metadata.json`, written by `bun run scan --libraries --write`:
+
+```json
+"library": {
+  "slug": "nature-kit",
+  "from": ["Models/GLTF format"],
+  "categories": { "*-brick-*": "brick" },
+  "exclude": ["*_collider"],
+  "subsets": [
+    { "slug": "nature-kit-core", "keep": ["category:tree", "category:rock", "stump_*"] }
+  ]
+}
+```
+
+- **Output path is a convention, not a setting**: `derived/<namespace>/libraries/<slug>.glb`,
+  so it serves at `/kenney/libraries/nature-kit.glb`. The source layout is Kenney's
+  (spaces, `Models/GLB format/`, a folder per pack); the published layout is ours.
+- **`from` takes the union.** Some kits ship BOTH a `GLB format` and a `GLTF format`
+  folder holding largely *different* models (Retro Fantasy: 105 and 55, 9 in common),
+  so picking one folder would silently drop half the kit. Later entries win a name clash.
+- **`subsets`** cut a smaller library out of the built one — the same idea as
+  subsetting Quaternius' animation megafiles, one level up. Each pattern is a name
+  glob or `category:<name>`; a pattern matching nothing is fatal, like a missing clip.
+- Builds run in-process and cache like everything else. The signature covers **every
+  file** in the `from` dirs, not just the models — a kit's shared texture and a
+  `.gltf`'s `.bin` sidecar are inputs too. It does **not** cover the builder's own
+  code (true of the Blender path as well), so after editing `bin/library-glb.ts`,
+  `rm .cache/library-*.glb .cache/libsubset-*.glb` or you will keep shipping the
+  output of the version you just changed.
+
+### Metadata inside the glb
+
+The point of a library is being able to use part of it, so each one carries its own
+index in `extras` — standard glTF, no extension:
+
+| Where | What | three.js |
+| --- | --- | --- |
+| `scenes[0].extras.library` | `{ count, categories: {name: n}, items: [...] }` | `gltf.scene.userData.library` |
+| each root node's `extras` | `{ category, tags[], clips[]? }` | `object.userData` |
+| `asset.extras` | credit / license / link | `gltf.asset.extras` |
+
+Each item is `{ name, category, tags[], size[], clips[]? }` — `size` being the
+world-space bounding box, which is what you need to place a thing on a grid.
+`extras` is in the JSON chunk at the FRONT of the glb (9% of the bytes), so a
+consumer can range-request the head of the file and read the whole catalogue
+without pulling any geometry.
+
+**Categories are derived, then corrected.** The default is the first name token
+(`road-slant-high` → `road`), with the whole token list as `tags` — which is
+excellent for most kits (Nature: tree 61, cliff 56, rock 30) and wrong where the
+leading token is a style rather than a thing. Brick Kit is the worked example:
+names read `<edge>-<quality>-<part>-<size>`, so the automatic answer was
+bevel/none/round/square ×74, and two `categories` rules turn it into brick 184 /
+plate 112. Look at a new kit with `bun bin/library-glb.ts <lib>.glb --list` before
+deciding it needs rules.
+
+### What is NOT published
+
+Everything raw — and not because a rule catches it, but because nothing pushed it.
+`assets/kenney/metadata.json` has no `publish` at all, so `/kenney/` serves only
+what was *built*: the libraries. Same for Quaternius' UAL megafiles — they are
+inputs, they are not in `publish`, so they cannot reach the CDN. See Publishing.
 
 ## Adding a pack
 
 1. `mkdir assets/<name>/` and drop the asset files in (binaries stay local).
-2. Add `assets/<name>/metadata.json` with `copyright`/`credit`/`link`/`license`
-   (+ `exclude` for anything you don't want served, on top of the global excludes).
-3. `bun run build`, then `curl -I` a staged file (or check `firebase.json`) to
-   confirm the headers, then `bun run deploy`.
+2. Add `assets/<name>/metadata.json` with `copyright`/`credit`/`link`/`license`.
+   Add **nothing else** and the pack ships nothing — that is the correct default.
+3. Decide how it ships. For a folder of many models, a `library` spec (see above)
+   is almost always right. Only reach for `publish` when files must ship as-is.
+4. `bun run build`, check `find public -type f | wc -l` is what you expected, then
+   `curl -I` a staged file (or check `firebase.json`) for the headers, then
+   `bun run deploy`.
 
 ## Consuming side (`tosijs-3d`)
 
@@ -159,7 +326,17 @@ Consumers set the base once and reference assets by logical path:
 ```js
 import { setAssetBase, assetUrl, b3dLoader } from 'tosijs-3d'
 setAssetBase('https://cdn.tosijs.net')
-b3dLoader({ url: assetUrl('kenney/vehicles/car.glb') })
+b3dLoader({ url: assetUrl('kenney/libraries/nature-kit.glb') })
+```
+
+A library arrives as one scene whose children ARE the models, so you pick by name
+and clone, and filter on the index the file carries:
+
+```js
+const kit = gltf.scene                       // 329 children, one per model
+const tree = kit.getObjectByName('tree_pineDefaultA').clone()
+const { items, categories } = kit.userData.library   // {tree: 61, cliff: 56, ...}
+const rocks = items.filter((i) => i.category === 'rock')
 ```
 
 Loaders fetch cross-origin, so `Access-Control-Allow-Origin: *` is required — it's

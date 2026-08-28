@@ -24,6 +24,82 @@ Each 3D model pack ships **parallel format folders** — `FBX format/`, `GLB for
 glb. The **only** models lacking a glb were the animated characters (fbx/blend
 source only) → we generate those (see `CLAUDE.md`).
 
+Two wrinkles worth knowing before you go looking for a model:
+
+- A few packs ship **both** `GLB format/` and `GLTF format/`, and they hold largely
+  DIFFERENT models — Retro Fantasy 105 and 55 with only 9 names in common, Space
+  Station 97 and 80 with **none**. Neither folder is "the" set.
+- Vintage shows in the export. Older packs (UniGLTF: Nature, Furniture, Racing,
+  Space, Road, Weapon, Tower Defense Classic) carry **no textures at all** — flat
+  named materials like `woodBirch`, `leafsDark`. Newer ones (UnityGLTF) are a single
+  `colormap` material pointing at an **external** `Textures/colormap.png`, which
+  means those glb are *not self-contained*: served on their own, they render
+  untextured.
+
+---
+
+## ⭐ Kit libraries — what we actually serve
+
+None of the above is what a consuming app talks to. Each kit is published as **one
+glb** at `/kenney/libraries/<slug>.glb` (48 of them, 5,108 models, 101 MB); the raw
+tree is not published at all. The external-texture wrinkle disappears in the
+process — a library embeds the shared atlas once, so it IS self-contained.
+
+**The shape is uniform, by construction.** The scene's children ARE the models, one
+named root node each, always wrapped even when the source had a single root — so
+`scene.children` maps 1:1 to the index no matter which vintage the kit is.
+
+```js
+const kit = gltf.scene
+const tree = kit.getObjectByName('tree_pineDefaultA').clone()
+const { count, categories, items } = kit.userData.library
+// categories → { tree: 61, cliff: 56, rock: 30, stone: 30, ground: 29, ... }
+const short = items.filter((i) => i.category === 'tree' && i.size[1] < 1)
+```
+
+Per-model, the index carries `{ name, category, tags[], size[], clips[]? }`, and the
+same lands on each node's `userData`. `size` is the **world-space bounding box**,
+which is the number you want for grid placement — and it is exact, not estimated
+(computed from the POSITION min/max glTF already requires, through the node
+transforms).
+
+### Categories: derived, then corrected
+
+Kenney names in tokens, so the first token is the category and the whole list is
+the tags. This works better than it has any right to:
+
+| Kit | Auto categories |
+| --- | --- |
+| Nature Kit | tree 61, cliff 56, rock 30, stone 30, ground 29, crops 17, bridge 16… |
+| Tower Defense Kit | snow 50, tile 38, tower 38, enemy 10, detail 8, weapon 8… |
+| Space Kit | pipe 18, corridor 14, terrain 14, platform 13, monorail 12, rocket 10… |
+
+Where it fails it fails obviously, and the fix is a couple of `categories` rules in
+the kit's `metadata.json`:
+
+- **Brick Kit** — names are `<edge>-<quality>-<part>-<size>`, so the automatic
+  answer was bevel/none/round/square ×74 each. True; useless. Two rules
+  (`*-brick-*`, `*-plate-*`) give brick 184 / plate 112, with edge and quality
+  still available as tags. **Done.**
+- **Food Kit** — 108 categories over 200 models, because in a food kit almost every
+  item IS its own type. Not wrong, just flat; tags carry the useful grouping. Left
+  alone deliberately.
+- **Racing Kit** — camelCase (`tentRoofDouble`), which tokenises correctly to
+  `tent`. No rules needed.
+
+Check a kit before deciding: `bun bin/library-glb.ts derived/kenney/libraries/<slug>.glb --list`.
+
+### Curated subsets
+
+A library is the whole kit; an app usually wants a slice. `subsets` cuts one from
+the built library by name glob or `category:`, exactly as clip-subsetting cuts the
+Quaternius megafiles (below) — same machinery, one level up.
+
+`nature-kit-core` is the worked example: ground + trees + rocks + grass + stumps,
+**131 of 329 models, 2.36 MB → 0.91 MB**. Enough to stand up an outdoor scene;
+cliffs, crops, bridges and camp props stay in the full library because dressing a
+scene is a different job from starting one.
+
 ---
 
 ## ⭐ Animated character system (the modular kit)
@@ -85,7 +161,10 @@ Bundle anims onto a themed-pack model — almost certainly identical.)
 - **Attach points** (bone nodes): `Head` (hats / ears / masks / mouths),
   `LeftHand` / `RightHand` (weapons / tools), `Hips`·`Spine` (tails).
 - **Accessories**: `Animated Characters Bundle/Accessories/Animals/*.fbx` — ears,
-  tails, mouths, etc. (uncovered → converted to glb one-to-one by the pipeline).
+  tails, mouths, etc. The pipeline *can* convert these one-to-one, but the pack is
+  currently **shelved** (`"shelved": true`), so they are neither built nor shipped —
+  nothing consumes them, and under the current model building something publishes it.
+  Drop the flag and `bun run scan --write` if this workflow gets picked up again.
 - **Equip = parent the accessory to the target bone node** (Babylon
   `attachToBone` / parent to the joint TransformNode).
 - ⚠️ **OPEN:** confirm each accessory's authored *origin/orientation* sits correctly
@@ -298,5 +377,16 @@ regenerate.** The whole library is sitting in `assets/`.
   themed-pack model? (enables reusing the 17 clips everywhere)
 - [ ] **2D assets** — spritesheet/tilemap conventions (`Tilesheet.txt`, `.tsx`/`.tmx`
   in 1-Bit packs). Atlas layout / naming.
+- [ ] **Quaternius `characters/` + `hairstyles/`** — ~113 MB of individual models,
+  still published raw. The same library treatment applies; they are the obvious
+  next candidates now the Kenney kits are done.
+- [x] ~~**Animated Characters Bundle as a library**~~ — **shelved instead.** Nothing
+  consumes it: tosijs-3d uses the Quaternius rig, and the Bundle's *characters* were
+  never buildable anyway (retargeting, above), so all that was ever produced were 41
+  static accessories. Marked `"shelved": true`, so it is not built and therefore not
+  shipped. To revive: drop the flag, `bun run scan --write`, and consider giving it a
+  `library` spec rather than 41 individual paths.
+- [ ] **Category rules for the rest** — only Brick Kit has been corrected. Scan the
+  other 47 with `--list` and fix the ones where the leading token is a style.
 - [ ] **Audio** — SFX/music categories + formats.
 - [ ] **UI assets / Icons** — nine-slice? sprite naming?
