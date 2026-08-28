@@ -3,6 +3,10 @@
     "slug": "marble-kit",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "s-curve-*": "curve"
+    },
+    "note": "s-curve-* tokenised to a one-letter `s` category. The piece is a curve."
   }
 }

@@ -1,9 +1,7 @@
 {
-  "headers": {
-    "credit": "tosijs-3d — placeholder voice acting generated with Resemble / Chatterbox",
-    "license": "Generated test/placeholder audio; not authored for redistribution",
-    "link": "https://3d.tosijs.net"
-  },
+  "credit": "tosijs-3d — placeholder voice acting generated with Resemble / Chatterbox",
+  "license": "Generated test/placeholder audio; not authored for redistribution",
+  "link": "https://3d.tosijs.net",
   "note": "Our own generated placeholder VO, so index.json ships with it — an index of content we authored is not a creator's catalogue.",
   "publish": [
     "*.mp3",

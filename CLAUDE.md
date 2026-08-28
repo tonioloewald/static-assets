@@ -251,13 +251,18 @@ Lives in the kit's own `metadata.json`, written by `bun run scan --libraries --w
 "library": {
   "slug": "nature-kit",
   "from": ["Models/GLTF format"],
-  "categories": { "*-brick-*": "brick" },
+  "include": ["tree_*"],
   "exclude": ["*_collider"],
+  "categories": { "*-brick-*": "brick" },
   "subsets": [
     { "slug": "nature-kit-core", "keep": ["category:tree", "category:rock", "stump_*"] }
   ]
 }
 ```
+
+A metadata.json may declare **an array** of these, which is how one folder becomes
+several libraries: `include` narrows each one. Quaternius' characters are split
+that way (below).
 
 - **Output path is a convention, not a setting**: `derived/<namespace>/libraries/<slug>.glb`,
   so it serves at `/kenney/libraries/nature-kit.glb`. The source layout is Kenney's
@@ -265,6 +270,8 @@ Lives in the kit's own `metadata.json`, written by `bun run scan --libraries --w
 - **`from` takes the union.** Some kits ship BOTH a `GLB format` and a `GLTF format`
   folder holding largely *different* models (Retro Fantasy: 105 and 55, 9 in common),
   so picking one folder would silently drop half the kit. Later entries win a name clash.
+- **`include` / `exclude`** narrow which models go in (name globs, no extension).
+  `include` is how one folder yields several libraries.
 - **`subsets`** cut a smaller library out of the built one — the same idea as
   subsetting Quaternius' animation megafiles, one level up. Each pattern is a name
   glob or `category:<name>`; a pattern matching nothing is fatal, like a missing clip.
@@ -300,6 +307,28 @@ names read `<edge>-<quality>-<part>-<size>`, so the automatic answer was
 bevel/none/round/square ×74, and two `categories` rules turn it into brick 184 /
 plate 112. Look at a new kit with `bun bin/library-glb.ts <lib>.glb --list` before
 deciding it needs rules.
+
+### When a library will not fit
+
+Kenney kits merge to 0.4–7.8 MB because their textures are 8 KB atlases. Quaternius'
+characters are the opposite case — 2048² PBR maps at 3–4 MB apiece, ~8.5 MB of
+geometry against 88 MB of textures — and the whole folder in one file is **67 MB**,
+past Cloudflare's 25 MiB per-file cap. Splitting by style leaves 30 MB, still over.
+
+So they ship split by **style+gender** (~15 MB each), which is not an arbitrary cut:
+it is exactly how the textures are shared, one Normal/BaseColor/Roughness set per
+style+gender plus the hair and eye maps every character uses. Those shared maps are
+consequently re-embedded in all six files, so the six total *more* than the single
+67 MB file would — the trade buys a shape that fits the host and can be cached per
+character type.
+
+Content-hash dedupe pays for itself here regardless: the pack ships 36 PNGs of which
+only 24 are distinct (`T_Hair_1_Normal.png` and `T_Hair_1_Normal_png.png` are
+byte-identical), so a build sheds ~30% before any splitting.
+
+Nothing is resampled to achieve this. **Re-encoding those 2K PNGs would shrink it far
+more than any packing decision, and is a content change nobody has approved** — if
+the size ever matters more than fidelity, that is the lever, not a finer split.
 
 ### What is NOT published
 

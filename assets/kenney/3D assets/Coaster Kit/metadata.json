@@ -3,6 +3,15 @@
     "slug": "coaster-kit",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "coaster-steel-*": "steel",
+      "coaster-mouse-*": "mouse",
+      "coaster-monorail-*": "monorail",
+      "coaster-hanging-*": "hanging",
+      "coaster-flume-*": "flume",
+      "coaster-wood-*": "wood"
+    },
+    "note": "Every piece leads with `coaster`, which put 141 of 183 models in one category. The useful facet is TRACK TYPE: you pick steel or flume or monorail and then need every piece of it. The piece shape stays in tags."
   }
 }

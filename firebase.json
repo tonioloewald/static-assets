@@ -42,8 +42,8 @@
             "value": "CC0 / see Quaternius' terms for the paid packs"
           },
           {
-            "key": "link",
-            "value": "https://quaternius.com"
+            "key": "Link",
+            "value": "<https://quaternius.com>; rel=\"author\"; title=\"Quaternius — Universal Animation Library + character packs\""
           }
         ]
       },
@@ -59,8 +59,8 @@
             "value": "Generated test/placeholder audio; not authored for redistribution"
           },
           {
-            "key": "link",
-            "value": "https://3d.tosijs.net"
+            "key": "Link",
+            "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"tosijs-3d — placeholder voice acting generated with Resemble / Chatterbox\""
           }
         ]
       },
@@ -76,16 +76,16 @@
             "value": "http://creativecommons.org/publicdomain/zero/1.0/"
           },
           {
+            "key": "Link",
+            "value": "<https://kenney.nl>; rel=\"author\"; title=\"Kenney\""
+          },
+          {
             "key": "social",
             "value": "https://social.kenney.nl/bluesky"
           },
           {
             "key": "patreon",
             "value": "https://patreon.com/kenney"
-          },
-          {
-            "key": "link",
-            "value": "https://kenney.nl"
           }
         ]
       }

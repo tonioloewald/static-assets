@@ -377,16 +377,30 @@ regenerate.** The whole library is sitting in `assets/`.
   themed-pack model? (enables reusing the 17 clips everywhere)
 - [ ] **2D assets** — spritesheet/tilemap conventions (`Tilesheet.txt`, `.tsx`/`.tmx`
   in 1-Bit packs). Atlas layout / naming.
-- [ ] **Quaternius `characters/` + `hairstyles/`** — ~113 MB of individual models,
-  still published raw. The same library treatment applies; they are the obvious
-  next candidates now the Kenney kits are done.
+- [x] ~~**Quaternius `characters/` + `hairstyles/`**~~ — **done.** 148 files → 7
+  libraries: `hairstyles` (38 models, 13.8 MB) and characters split by style+gender
+  (~15 MB each, because 2K PBR maps put the whole folder at 67 MB, over the host's
+  25 MiB per-file cap — see CLAUDE.md). The rig survives the merge intact: 65 joints,
+  identical names and order, inverse-bind matrices bit-identical, and every node
+  UAL1_core animates is present — so the UAL clips still drive these characters.
 - [x] ~~**Animated Characters Bundle as a library**~~ — **shelved instead.** Nothing
   consumes it: tosijs-3d uses the Quaternius rig, and the Bundle's *characters* were
   never buildable anyway (retargeting, above), so all that was ever produced were 41
   static accessories. Marked `"shelved": true`, so it is not built and therefore not
   shipped. To revive: drop the flag, `bun run scan --write`, and consider giving it a
   `library` spec rather than 41 individual paths.
-- [ ] **Category rules for the rest** — only Brick Kit has been corrected. Scan the
-  other 47 with `--list` and fix the ones where the leading token is a style.
+- [x] ~~**Category rules for the rest**~~ — swept all 48. Six needed rules and now
+  have them: Coaster (141 of 183 under `coaster`; the useful facet is track type —
+  steel/flume/monorail/…), City Commercial (`low-detail-building-*` LODs split
+  `building` in two), Modular Dungeon + Modular Space (`template-` prefixes hiding
+  wall/floor), Marble (`s-curve-*` → a one-letter `s` category), Minigolf
+  (support/supports). Plus Brick Kit, done earlier.
+- [ ] **Kits whose names carry no semantics** — Road Pack (`tile000`–`293`), Tower
+  Defense Classic (`tile_028`), and Space Station Kit's `object`/`object_001`… (80 of
+  its 177 models, from the GLTF folder). No rule can fix these; the names contain
+  nothing. Checked that the Space Station `object_*` are NOT duplicates of the
+  properly-named GLB-folder models — zero shared geometry — so they are real content
+  that simply arrived unnamed. Would need hand-authored names or a connectivity
+  lookup (see the Road Pack entry above).
 - [ ] **Audio** — SFX/music categories + formats.
 - [ ] **UI assets / Icons** — nine-slice? sprite naming?

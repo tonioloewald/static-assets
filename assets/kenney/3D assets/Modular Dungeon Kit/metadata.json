@@ -3,6 +3,13 @@
     "slug": "modular-dungeon-kit",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "template-wall*": "wall",
+      "template-floor*": "floor",
+      "template-corner": "corner",
+      "template-detail": "detail"
+    },
+    "note": "The template-* prefix marks the modular base pieces, not a kind of thing; without these rules wall and floor pieces hide under a `template` category while corridor/room/gate/stairs sit beside them."
   }
 }

@@ -115,8 +115,13 @@ const collect = (dir: string, attribution: Record<string, string> = {}) => {
     if (Array.isArray(m.convert) && m.convert.length)
       // pack-level `scale` (uniform factor) → applied to every model in the pack.
       jobs.push({ dir, specs: m.convert, scale: Number(m.scale) || 1 })
-    if (m.library?.slug && m.library?.from?.length)
-      libJobs.push({ dir, spec: m.library, attribution: attr })
+    // One directory can declare SEVERAL libraries — Quaternius' characters split
+    // by style+gender to stay under the host's per-file limit — so accept either
+    // a single spec or an array of them.
+    for (const lib of Array.isArray(m.library) ? m.library : [m.library]) {
+      if (lib?.slug && lib?.from?.length)
+        libJobs.push({ dir, spec: lib, attribution: attr })
+    }
   }
   for (const n of readdirSync(dir)) {
     const p = join(dir, n)

@@ -654,9 +654,18 @@ export class Builder {
 export interface LibrarySpec {
   /** Directories of source models, relative to the kit dir. Later wins on a name clash. */
   from: string[]
+  /**
+   * Models to include (name globs, no extension). Omitted means all of them.
+   *
+   * This is how one folder becomes several libraries. Quaternius' characters are
+   * 2048² PBR maps at 3–4 MB apiece, so the whole folder in one file is 67 MB —
+   * past Cloudflare's 25 MiB per-file limit — and the natural cut is by
+   * style+gender, because that is how the textures are shared.
+   */
+  include?: string[]
   /** name-glob → category, first match wins; otherwise the first name token. */
   categories?: Record<string, string>
-  /** Models NOT to include (name globs, no extension). */
+  /** Models NOT to include (name globs, no extension). Applied after `include`. */
   exclude?: string[]
 }
 
@@ -672,9 +681,11 @@ const MODEL_RE = /\.(glb|gltf)$/i
 export function collectModels(
   kitDir: string,
   from: string[],
-  exclude: string[] = []
+  exclude: string[] = [],
+  include: string[] = []
 ): { name: string; path: string }[] {
   const excluded = exclude.map(globToRe)
+  const included = include.map(globToRe)
   const byName = new Map<string, string>()
   for (const rel of from) {
     const dir = join(kitDir, rel)
@@ -682,6 +693,7 @@ export function collectModels(
     for (const entry of readdirSync(dir).sort()) {
       if (!MODEL_RE.test(entry)) continue
       const name = entry.replace(MODEL_RE, '')
+      if (included.length && !included.some((re) => re.test(name))) continue
       if (excluded.some((re) => re.test(name))) continue
       byName.set(name, join(dir, entry))
     }
@@ -727,7 +739,12 @@ export function buildLibrary(opts: {
   spec: LibrarySpec
   attribution?: Record<string, string>
 }): BuildResult {
-  const models = collectModels(opts.kitDir, opts.spec.from, opts.spec.exclude)
+  const models = collectModels(
+    opts.kitDir,
+    opts.spec.from,
+    opts.spec.exclude,
+    opts.spec.include
+  )
   if (!models.length) throw new Error(`${opts.kitDir}: no models found`)
   const b = new Builder()
   let from = 0

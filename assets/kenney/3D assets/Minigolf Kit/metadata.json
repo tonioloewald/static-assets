@@ -3,6 +3,10 @@
     "slug": "minigolf-kit",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "supports*": "support"
+    },
+    "note": "support/supports split the same category in two on a plural."
   }
 }

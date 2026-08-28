@@ -3,6 +3,13 @@
     "slug": "modular-space-kit",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "template-wall*": "wall",
+      "template-floor*": "floor",
+      "template-corner": "corner",
+      "template-detail": "detail"
+    },
+    "note": "Same naming as Modular Dungeon Kit — the two share a piece set."
   }
 }

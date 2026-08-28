@@ -1,14 +1,99 @@
 {
-  "headers": {
-    "credit": "Quaternius — Universal Animation Library + character packs",
-    "license": "CC0 / see Quaternius' terms for the paid packs",
-    "link": "https://quaternius.com"
-  },
-  "note": "The UAL megafiles are build INPUTS, not deliverables — 20 MB each, of which three quarters is animation data any given app will not play. They are simply not in `publish`, so they never reach the CDN; the curated subset built into derived/ is the deliverable. characters/ and hairstyles/ are pushed as-is for now and are the obvious next candidates for the library treatment (see CONTENT-MAP.md).",
-  "publish": [
-    "Mannequin_F.glb",
-    "characters/**",
-    "hairstyles/**"
+  "credit": "Quaternius — Universal Animation Library + character packs",
+  "license": "CC0 / see Quaternius' terms for the paid packs",
+  "link": "https://quaternius.com",
+  "note": "The UAL megafiles are build INPUTS, not deliverables — 20 MB each, of which three quarters is animation data any given app will not play. They are simply not in `publish`, so they never reach the CDN; the curated subset built into derived/ is the deliverable.\n\nCHARACTERS ARE SPLIT BY STYLE+GENDER, and that is a size decision, not a taste one. These are 2048-square PBR maps at 3-4 MB apiece, so the whole characters folder in one library is 67 MB — past Cloudflare's 25 MiB per-file limit. Splitting by style keeps it at 30 MB, still over. Style+gender lands at ~15 MB each because that is exactly how the textures are shared: one Normal/BaseColor/Roughness set per style+gender, plus the hair and eye maps every character uses. Those shared maps are therefore re-embedded in all six files, which is why the six total more than the single 67 MB file would. Nothing is resampled to achieve any of this; re-encoding the 2K PNGs would shrink it far more, and is a content decision nobody has made yet.",
+  "library": [
+    {
+      "slug": "characters-regular-female",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Regular_Female_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "characters-regular-male",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Regular_Male_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "characters-superhero-female",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Superhero_Female_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "characters-superhero-male",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Superhero_Male_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "characters-teen-female",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Teen_Female_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "characters-teen-male",
+      "from": [
+        "characters"
+      ],
+      "include": [
+        "Teen_Male_*"
+      ],
+      "categories": {
+        "*_FullBody": "fullbody",
+        "*_OnlyHead": "head",
+        "*_UpperBody": "upperbody"
+      }
+    },
+    {
+      "slug": "hairstyles",
+      "from": [
+        "hairstyles"
+      ]
+    }
   ],
   "convert": [
     {

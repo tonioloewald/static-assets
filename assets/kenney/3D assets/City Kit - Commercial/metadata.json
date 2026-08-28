@@ -3,6 +3,10 @@
     "slug": "city-kit-commercial",
     "from": [
       "Models/GLB format"
-    ]
+    ],
+    "categories": {
+      "low-detail-building-*": "building"
+    },
+    "note": "low-detail-building-* are LOD variants of the same buildings, so the leading token split one category into building 19 / low 16. `low` and `detail` remain as tags."
   }
 }

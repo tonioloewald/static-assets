@@ -1,10 +1,10 @@
 {
+  "credit": "Kenney",
+  "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+  "link": "https://kenney.nl",
   "headers": {
-    "credit": "Kenney",
-    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
     "social": "https://social.kenney.nl/bluesky",
-    "patreon": "https://patreon.com/kenney",
-    "link": "https://kenney.nl"
+    "patreon": "https://patreon.com/kenney"
   },
   "note": "No `publish` rules on purpose: NOTHING under assets/kenney/ is served from source. What serves under /kenney/ is built — the per-kit libraries in derived/kenney/libraries/. These headers still apply to those paths, so credit and licence ride on every byte. Adding a `publish` glob here would put a slice of a creator's paid bundle on the CDN; build a library instead."
 }
