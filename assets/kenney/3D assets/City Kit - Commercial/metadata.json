@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "city-kit-commercial",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "coaster-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "castle-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-dungeon",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

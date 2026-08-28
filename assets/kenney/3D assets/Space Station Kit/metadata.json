@@ -1,0 +1,9 @@
+{
+  "library": {
+    "slug": "space-station-kit",
+    "from": [
+      "Models/GLTF format",
+      "Models/GLB format"
+    ]
+  }
+}

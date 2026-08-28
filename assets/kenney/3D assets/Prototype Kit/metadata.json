@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "prototype-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

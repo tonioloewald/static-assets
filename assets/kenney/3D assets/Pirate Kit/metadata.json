@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "pirate-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

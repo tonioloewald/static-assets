@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "graveyard-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

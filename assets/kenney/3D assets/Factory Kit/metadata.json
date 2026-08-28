@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "factory-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

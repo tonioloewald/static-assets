@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "tower-defense-classic",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

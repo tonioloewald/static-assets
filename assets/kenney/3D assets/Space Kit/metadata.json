@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "space-kit",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

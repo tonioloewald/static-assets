@@ -1,0 +1,13 @@
+{
+  "library": {
+    "slug": "brick-kit",
+    "from": [
+      "Models/GLB format"
+    ],
+    "note": "Names read <edge>-<quality>-<part>-<size>, so the leading token is a bevel style and the automatic first-token category groups the kit into bevel/none/round/square — true, and useless as a filter. The part is what you pick a piece by; edge and quality stay available as tags.",
+    "categories": {
+      "*-brick-*": "brick",
+      "*-plate-*": "plate"
+    }
+  }
+}

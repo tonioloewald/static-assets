@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "marble-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

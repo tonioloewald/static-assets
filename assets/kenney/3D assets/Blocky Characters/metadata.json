@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "blocky-characters",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

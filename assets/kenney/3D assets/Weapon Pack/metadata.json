@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "weapon-pack",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

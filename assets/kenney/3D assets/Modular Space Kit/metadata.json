@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "modular-space-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

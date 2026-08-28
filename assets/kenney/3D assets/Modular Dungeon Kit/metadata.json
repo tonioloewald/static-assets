@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "modular-dungeon-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

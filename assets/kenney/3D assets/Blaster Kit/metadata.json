@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "blaster-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

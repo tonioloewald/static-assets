@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "racing-kit",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

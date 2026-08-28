@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "car-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

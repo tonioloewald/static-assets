@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "building-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

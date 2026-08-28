@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-characters",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

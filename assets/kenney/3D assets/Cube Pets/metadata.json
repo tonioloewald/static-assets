@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "cube-pets",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "furniture-kit",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

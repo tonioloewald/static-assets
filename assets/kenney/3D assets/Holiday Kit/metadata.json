@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "holiday-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

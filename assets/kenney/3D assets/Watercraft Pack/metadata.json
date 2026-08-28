@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "watercraft-pack",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

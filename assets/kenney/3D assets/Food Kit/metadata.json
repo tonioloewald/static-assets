@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "food-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

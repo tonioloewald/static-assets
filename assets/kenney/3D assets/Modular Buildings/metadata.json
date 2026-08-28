@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "modular-buildings",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

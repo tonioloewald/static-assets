@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "survival-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

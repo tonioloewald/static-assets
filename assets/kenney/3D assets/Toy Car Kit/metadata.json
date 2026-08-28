@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "toy-car-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

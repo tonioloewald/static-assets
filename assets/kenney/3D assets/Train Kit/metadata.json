@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "train-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

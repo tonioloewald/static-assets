@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "nature-kit-classic",
+    "from": [
+      "Models/glTF format"
+    ]
+  }
+}

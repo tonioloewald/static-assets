@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "city-kit-industrial",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "library": {
+    "slug": "nature-kit",
+    "from": [
+      "Models/GLTF format"
+    ],
+    "subsets": [
+      {
+        "slug": "nature-kit-core",
+        "note": "Enough to stand up an outdoor scene — ground to place on, trees and rocks to place, grass to hide the seams. The other 200 models (cliffs, crops, bridges, camp props) are a scene-dressing problem, not a getting-started one, and stay in the full library.",
+        "keep": [
+          "category:ground",
+          "category:tree",
+          "category:rock",
+          "category:grass",
+          "stump_*"
+        ]
+      }
+    ]
+  }
+}

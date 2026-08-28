@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "fantasy-town-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

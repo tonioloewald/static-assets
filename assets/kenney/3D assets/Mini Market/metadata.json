@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-market",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

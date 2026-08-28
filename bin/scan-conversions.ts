@@ -18,6 +18,12 @@
  *
  * Scans `assets/kenney/3D assets/<pack>/…`; point PACKS_ROOT elsewhere for other
  * libraries.
+ *
+ * `--libraries` runs a different scan over the same tree: every pack that ships
+ * a folder of individual models gets a `library` spec (see bin/library-glb.ts)
+ * so the pack publishes as ONE glb instead of a few hundred. It only ever fills
+ * in `slug` and `from` — hand-authored `categories`, `exclude` and `subsets`
+ * survive a re-scan untouched, because those are the parts a person curates.
  */
 import {
   readdirSync,
@@ -107,10 +113,100 @@ const scanPack = (pack: string): Spec[] => {
   return specs
 }
 
+/**
+ * A pack marked `"shelved": true` is content we deliberately do NOT ship, and
+ * this scan must not undo that.
+ *
+ * Emptying a pack's `convert` array is not enough on its own: the next
+ * `--write` would rediscover the same uncovered fbx and put the specs straight
+ * back. That mattered little when a build only produced files; now that
+ * `derived/` IS the shipped tree, a regenerated spec is a republished asset.
+ */
+const isShelved = (pack: string): boolean => {
+  const mp = join(pack, 'metadata.json')
+  return existsSync(mp) && JSON.parse(readFileSync(mp, 'utf8')).shelved === true
+}
+
+// ------------------------------------------------------------- libraries ---
+
+/** `Nature Kit (Classic)` → `nature-kit-classic`, `City Kit - Commercial` → `city-kit-commercial`. */
+export const slugify = (name: string): string =>
+  name
+    .replace(/[()]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+
+/** Folders of ready-to-merge models. Kenney names them inconsistently by vintage. */
+const MODEL_DIR_RE = /^(glb|gltf) format$/i
+const modelDirs = (pack: string): string[] => {
+  const found: string[] = []
+  const rec = (dir: string): void => {
+    for (const n of readdirSync(dir)) {
+      const p = join(dir, n)
+      if (!statSync(p).isDirectory()) continue
+      if (
+        MODEL_DIR_RE.test(n) &&
+        readdirSync(p).some((f) => ['.glb', '.gltf'].includes(ext(f)))
+      ) {
+        found.push(toPosix(relative(pack, p)))
+      } else rec(p)
+    }
+  }
+  rec(pack)
+  // `GLB format` last: where a pack ships both, the two hold largely DIFFERENT
+  // models, and on the few names in common the GLB is the newer export.
+  return found.sort((a, b) => Number(/glb format$/i.test(a)) - Number(/glb format$/i.test(b)))
+}
+
+if (process.argv.includes('--libraries')) {
+  let packs = 0
+  let models = 0
+  for (const name of readdirSync(PACKS_ROOT).sort()) {
+    const pack = join(PACKS_ROOT, name)
+    if (!statSync(pack).isDirectory()) continue
+    if (isShelved(pack)) {
+      console.log(`${name}: shelved — skipped`)
+      continue
+    }
+    const from = modelDirs(pack)
+    if (!from.length) {
+      console.log(`${name}: no model folder — skipped`)
+      continue
+    }
+    const count = new Set(
+      from.flatMap((d) =>
+        readdirSync(join(pack, d))
+          .filter((f) => ['.glb', '.gltf'].includes(ext(f)))
+          .map(stem)
+      )
+    ).size
+    packs++
+    models += count
+
+    const mp = join(pack, 'metadata.json')
+    const meta = existsSync(mp) ? JSON.parse(readFileSync(mp, 'utf8')) : {}
+    // Preserve curation; only (re)assert what discovery owns.
+    meta.library = { ...(meta.library ?? {}), slug: slugify(name), from }
+    console.log(
+      `${name}: ${count} models → ${meta.library.slug}.glb  [${from.join(', ')}]` +
+        (meta.library.categories ? '  (+category rules)' : '') +
+        (meta.library.subsets ? `  (+${meta.library.subsets.length} subset)` : '')
+    )
+    if (WRITE) writeFileSync(mp, JSON.stringify(meta, null, 2) + '\n')
+  }
+  console.log(
+    `\nscan: ${packs} librar${packs === 1 ? 'y' : 'ies'}, ${models} models. ` +
+      (WRITE ? 'metadata.json written.' : 'dry-run — pass --write to apply.')
+  )
+  process.exit(0)
+}
+
 let touched = 0
 for (const name of readdirSync(PACKS_ROOT)) {
   const pack = join(PACKS_ROOT, name)
   if (!statSync(pack).isDirectory()) continue
+  if (isShelved(pack)) continue
   const specs = scanPack(pack)
   if (specs.length === 0) continue
   touched++

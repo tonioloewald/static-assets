@@ -1,0 +1,9 @@
+{
+  "library": {
+    "slug": "retro-fantasy-kit",
+    "from": [
+      "Models/GLTF format",
+      "Models/GLB format"
+    ]
+  }
+}

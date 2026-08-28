@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "hexagon-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

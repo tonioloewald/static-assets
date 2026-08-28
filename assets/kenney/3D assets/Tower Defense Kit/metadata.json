@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "tower-defense-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

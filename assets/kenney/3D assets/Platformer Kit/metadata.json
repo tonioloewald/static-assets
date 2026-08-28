@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "platformer-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "road-pack",
+    "from": [
+      "Models/GLTF format"
+    ]
+  }
+}

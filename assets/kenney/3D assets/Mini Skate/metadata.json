@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-skate",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

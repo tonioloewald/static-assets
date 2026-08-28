@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-arcade",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

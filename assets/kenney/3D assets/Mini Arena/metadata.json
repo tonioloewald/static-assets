@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "mini-arena",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}

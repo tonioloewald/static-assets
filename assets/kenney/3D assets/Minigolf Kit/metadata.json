@@ -1,0 +1,8 @@
+{
+  "library": {
+    "slug": "minigolf-kit",
+    "from": [
+      "Models/GLB format"
+    ]
+  }
+}
