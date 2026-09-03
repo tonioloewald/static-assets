@@ -88,6 +88,23 @@
             "value": "https://patreon.com/kenney"
           }
         ]
+      },
+      {
+        "source": "/tosijs-product/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "tosijs-product — demo assets for the doc site at product.tosijs.net"
+          },
+          {
+            "key": "license",
+            "value": "Demo/placeholder media for tosijs-product's documentation; not authored for redistribution"
+          },
+          {
+            "key": "Link",
+            "value": "<https://product.tosijs.net>; rel=\"author\"; title=\"tosijs-product — demo assets for the doc site at product.tosijs.net\""
+          }
+        ]
       }
     ]
   }

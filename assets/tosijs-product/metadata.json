@@ -1,0 +1,15 @@
+{
+  "credit": "tosijs-product — demo assets for the doc site at product.tosijs.net",
+  "license": "Demo/placeholder media for tosijs-product's documentation; not authored for redistribution",
+  "link": "https://product.tosijs.net",
+  "note": "Media for the tosijs-product doc site, hosted here so the consuming repo does not carry ~15 MB of binaries in git AND in its GitHub Pages payload (docs/ is committed and served from main). Provenance is deliberately understated rather than asserted: agent-owl.mp4 is AI-generated (a Veo watermark is visible in frame), macbook_neo.glb arrived without recorded provenance, and only tosi-platform.json is unambiguously ours. Treat all four as demo material, not as a licensed asset pack — if any of it is ever reused outside the doc site, establish provenance first.\n\nagent-owl_10x10_96.jpg is a mosaic derived from agent-owl.mp4 by `bunx tosi-mosaic`; both ship because <tosi-filmstrip> and the <video currentTime> scene demonstrate the two different techniques side by side.",
+  "publish": [
+    "*.mp4",
+    "*.jpg",
+    "*.glb",
+    "*.json"
+  ],
+  "exclude": [
+    "metadata.json"
+  ]
+}
