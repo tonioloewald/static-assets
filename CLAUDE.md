@@ -38,8 +38,12 @@ This file is about the *tooling*.
 - `bun run build` — `convert`, then push `publish`-ed sources into `derived/`, stage
   `derived/` → `public/`, and regenerate the host config (`public/_headers` +
   `public/robots.txt` + `firebase.json`).
-- `bun run deploy` — build, then `bunx wrangler pages deploy public --project-name
-  cdn-tosijs` (**Cloudflare Pages**).
+- `bun run publish [target] [--deploy]` — **the everyday path.** Rebuild just what
+  `target` matches, then show exactly which URLs would change before shipping. See
+  Targeted updates.
+- `bun run deploy` — rebuild EVERYTHING, then `bunx wrangler pages deploy public
+  --project-name cdn-tosijs` (**Cloudflare Pages**). Correct, and a blunt
+  instrument — see Targeted updates before reaching for it.
 - `bun run deploy:firebase` — build, then `bunx firebase-tools deploy --only hosting`
   (fallback).
 
@@ -69,6 +73,7 @@ publish is driven by `metadata.json` — you rarely touch anything else.
 | `bin/convert.ts` | Runs `convert` specs via Blender (cached) → `derived/`. |
 | `bin/blender-export.py` | Blender headless: fbx/blend → glb, with animation merging. |
 | `bin/subset-glb.ts` | glTF surgery: drop animations from a glb (no Blender). Library + CLI. |
+| `bin/publish.ts` | Targeted rebuild + a diff of what would change on the CDN, then deploy. |
 | `bin/library-glb.ts` | glTF surgery: merge a pack of models into one glb, and cut subsets of it. Library + CLI. |
 | `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |
 
@@ -185,6 +190,49 @@ toward a failed deploy. The largest thing we now ship is a 7.5 MB library.
 is a refinement, not a safeguard. And a pack marked `"shelved": true` is skipped by
 `scan`, so a later `--write` cannot quietly regenerate specs for content that was
 deliberately withdrawn (which, now that building means shipping, would republish it).
+
+## Targeted updates — change as few URLs as possible
+
+Everything is served `Cache-Control: public, max-age=31536000, immutable`, which is
+right for asset bytes and unforgiving about mistakes: **rewrite a file and every
+consumer keeps the old copy for a year.**
+
+`bun run build` regenerates the whole tree, so a change to a *builder* shifts the
+bytes of every file it produces even when no asset changed. That has happened:
+adding `size` to node extras rewrote all 56 libraries — 7,788 bytes of new JSON in
+nature-kit — while its geometry stayed bit-identical (verified by diffing the GLB
+chunks; the BIN chunk hash was unchanged).
+
+The obvious fix — hashed or versioned filenames — is worse. Every URL then churns
+on every rebuild, so pinned paths rot and consumers chase a moving target. Long
+cache lifetimes have this property whatever you name things, and a consumer who
+needs a fresh copy can force-refresh or add a query string. **Keep the URLs stable
+and change as few of them as possible:**
+
+```
+bun run publish                     # what would change if I staged right now
+bun run publish "Nature Kit"        # rebuild only that, then show the change
+bun run publish "Nature Kit" --deploy
+bun run publish --deploy            # ship pending source additions only
+```
+
+It hashes `public/` before and after, so the report is what *did* change, not what
+was meant to. Additions are listed but never block — nobody holds a URL that did
+not exist. A `--deploy` that would **change or remove** files outside the named
+target refuses and asks for `--force`, because that is the signature of an
+accidental mass invalidation. Removals are called out as `this URL stops resolving`.
+
+It compares against `.publish-state.json` — the hashes it recorded at its last
+successful deploy, written only on success and gitignored, since it describes what
+a machine pushed rather than what the repo says. Without that file the diff would
+only cover changes made in the same run, so a full `build` beforehand would leave
+nothing to report and ship the whole tree silently. When the file is absent it says
+so rather than pretending the tree is clean.
+
+Cloudflare Pages has no partial deploy — a deployment is a whole-tree snapshot, and
+uploading "just one file" would delete the rest of the site. That costs nothing:
+Pages skips content it already holds, so a targeted *build* yields a targeted
+upload. `Uploaded 1 files (63 already uploaded)` is the CDN confirming the diff.
 
 ## Ethics — why it's built this way (keep it this way)
 

@@ -23,3 +23,6 @@ derived/
 
 # wrangler local cache (account id, project name) — never tracked
 .wrangler/
+
+# local record of what this machine last deployed (see bin/publish.ts)
+.publish-state.json
