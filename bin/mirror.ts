@@ -106,7 +106,22 @@ const foldHeaders = (m: Meta): Record<string, string> => {
 
 type Rule = { path: string; headers: Record<string, string> }
 const rules: Rule[] = []
+/**
+ * Everything `publish` pushed into derived/ THIS run.
+ *
+ * Needed because pushing made deletion silent: a source file that is removed, or
+ * that a narrowed `publish` glob stops matching, leaves its copy sitting in
+ * derived/ — and derived/ is the shipped tree, so the file goes on being served
+ * forever. Only a full `rm -rf derived` cleaned it, which is exactly what an
+ * incremental publish exists to avoid.
+ *
+ * Compared against the manifest from last time, so a push that stops happening
+ * becomes a deletion. Built output is never in this set and is never touched.
+ */
+const pushedPaths = new Set<string>()
+const PUSHED_MANIFEST = join(DERIVED, '.pushed.json')
 let pushed = 0
+let unpublished = 0
 let files = 0
 let hardlinked = 0
 
@@ -166,6 +181,7 @@ const walk = (
       if (!activePub.some((re) => re.test(relChild))) continue
       if (activeEx.some((re) => re.test(relChild))) continue
       link(abs, join(DERIVED, relChild))
+      pushedPaths.add(relChild)
       pushed++
     }
   }
@@ -197,6 +213,31 @@ rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
 if (existsSync(SRC)) walk(SRC, {}, [], [])
 else console.warn('mirror: no assets/ directory yet — nothing to stage.')
+
+// Retire pushes that no longer happen, BEFORE staging, so a deletion reaches
+// public/ in the same run rather than one run late.
+if (existsSync(PUSHED_MANIFEST)) {
+  const previous: string[] = JSON.parse(readFileSync(PUSHED_MANIFEST, 'utf8'))
+  for (const rel of previous) {
+    if (pushedPaths.has(rel)) continue
+    const stale = join(DERIVED, rel)
+    if (!existsSync(stale)) continue
+    rmSync(stale, { force: true })
+    unpublished++
+    // Take the directory with it if that was the last thing in it, so an
+    // abandoned namespace leaves no empty shell behind.
+    let dir = dirname(stale)
+    while (dir.startsWith(DERIVED) && dir !== DERIVED && readdirSync(dir).length === 0) {
+      rmSync(dir, { recursive: true, force: true })
+      dir = dirname(dir)
+    }
+  }
+}
+if (pushedPaths.size || existsSync(PUSHED_MANIFEST)) {
+  mkdirSync(DERIVED, { recursive: true })
+  writeFileSync(PUSHED_MANIFEST, JSON.stringify([...pushedPaths].sort(), null, 0) + '\n')
+}
+
 stageTree(DERIVED)
 
 // ---- generate host config (Cloudflare _headers + firebase.json) -----------
@@ -240,7 +281,9 @@ const firebase = {
 writeFileSync(join(ROOT, 'firebase.json'), JSON.stringify(firebase, null, 2) + '\n')
 
 console.log(
-  `mirror: ${pushed} pushed → derived/, ${files} file(s) staged → public/ ` +
+  `mirror: ${pushed} pushed → derived/, ` +
+    (unpublished ? `${unpublished} stale push(es) removed, ` : '') +
+    `${files} file(s) staged → public/ ` +
     `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s) ` +
     `→ _headers + firebase.json`
 )

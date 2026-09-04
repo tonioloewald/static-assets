@@ -186,6 +186,19 @@ Cloudflare Pages caps a deployment at **20,000 files** (and 25 MiB per file), so
 old model was at 75% of a hard limit from one pack, with every new pack pushing
 toward a failed deploy. The largest thing we now ship is a 7.5 MB library.
 
+**Un-publishing works too, but it needs bookkeeping.** Pushing copies a source
+file INTO `derived/`, so deleting the source — or narrowing a `publish` glob so it
+stops matching — would otherwise leave the copy sitting in the shipped tree and
+serving forever. `mirror.ts` therefore records what it pushed in
+`derived/.pushed.json` and deletes anything that was pushed last time and is not
+pushed now (built output is never in that set and is never touched), pruning empty
+directories behind it. It reports `N stale push(es) removed` when it does.
+
+That manifest only knows about pushes made since it existed, so a file orphaned
+before it was introduced is invisible to it. The recovery for any suspected
+orphan is a full `rm -rf derived && bun run build` — cheap, since libraries
+relink from `.cache/` in about a second.
+
 `exclude` still exists, but only to carve a hole out of an inherited `publish` — it
 is a refinement, not a safeguard. And a pack marked `"shelved": true` is skipped by
 `scan`, so a later `--write` cannot quietly regenerate specs for content that was
