@@ -333,7 +333,7 @@ the megafiles are the source of truth. Originals are opened read-only.
 
 ### The current core subset
 
-`derived/quaternius/UAL1_core.glb` — **27 of 120 clips, 20.4 MB → 5.00 MB (75%
+`derived/quaternius/UAL1_core.glb` — **39 of 123 clips, 20.4 MB → 6.28 MB (69%
 smaller)**, structurally validated (accessors in bounds, skin and mesh intact):
 
 - locomotion: `Idle_Loop`, `Walk_Loop`, `Jog_Fwd/Bwd/Left/Right_Loop`,
@@ -343,6 +343,19 @@ smaller)**, structurally validated (accessors in bounds, skin and mesh intact):
   an airborne loop can last as long as the flight, and landings exist
 - water: `Swim_Fwd_Loop`, `Swim_Idle_Loop`
 - misc: `A_TPose`, `Interact`, `Dance_Loop`, `Driving_Loop`
+- **gunplay**: `Pistol_Idle_Loop`, `Pistol_Aim_Up/Neutral/Down`, `Pistol_Shoot`,
+  `Pistol_Reload` — the three aim poses are the shape a pitch-blended aim layer
+  wants (tosijs-3d's `aimPoseWeights` takes exactly up/level/down), and
+  `Pistol_Idle_Loop` is a whole ready STANCE rather than a torso pose, because a
+  character holding a weapon stands differently. They cost 1.28 MB of the 6.28,
+  which is the single biggest line in this subset and was added deliberately:
+  without them an armed character aims with his walk cycle, which reads as a
+  grafted-on weapon rather than a held one.
+
+  UAL2 ships `Bow_Aim_Up/Neutral/Down`, `Bow_Notch`, `Bow_Shoot` and
+  `Bow_RapidShoot_Loop` in the same shape, and UAL1 also has `Sword_Attack`,
+  `Punch_Jab/Cross` and the `Spell_*` family — so a melee or archery set is a
+  merge away when something needs one.
 
 **If a consumer needs a clip that is not in there, add it to the list and
 regenerate.** The whole library is sitting in `assets/`.

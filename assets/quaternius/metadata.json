@@ -129,7 +129,13 @@
         "Driving_Loop",
         "ClimbLedge",
         "Climb_Enter",
-        "Climb_Exit"
+        "Climb_Exit",
+        "Pistol_Idle_Loop",
+        "Pistol_Aim_Up",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Down",
+        "Pistol_Shoot",
+        "Pistol_Reload"
       ],
       "merge": [
         {
