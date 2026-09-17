@@ -218,9 +218,30 @@ chunks; the BIN chunk hash was unchanged).
 
 The obvious fix — hashed or versioned filenames — is worse. Every URL then churns
 on every rebuild, so pinned paths rot and consumers chase a moving target. Long
-cache lifetimes have this property whatever you name things, and a consumer who
-needs a fresh copy can force-refresh or add a query string. **Keep the URLs stable
-and change as few of them as possible:**
+cache lifetimes have this property whatever you name things. **Keep the URLs
+stable and change as few of them as possible:**
+
+⚠️ **But "a consumer can force-refresh" is NOT true, and this used to say it
+was.** Measured in Chrome with DevTools caching disabled, against
+`quaternius/UAL1_core.glb` the day after clips were added to it:
+
+| request | bytes |
+| --- | --- |
+| plain `fetch(url)` | 6,005,360 — stale, and not even the version before |
+| `fetch(url + '?v=…')` | 6,581,976 — current |
+| `fetch(url, {cache:'reload'})` | 6,581,976 — current |
+
+The CDN serves current bytes to anyone who ASKS freshly; an ordinary request
+gets the old copy regardless of the browser's cache setting. So **a consumer
+depending on republished content must change the URL** — a `?v=` query is
+enough, and `tosijs-3d`'s `assetUrl(path, version)` exists for it.
+
+Which does not change the advice above — stable URLs are still right, and
+rewriting one is still the thing to avoid — but it does change what you owe the
+consumers when you do rewrite one: **tell them, and give them a version to
+pass.** Downstream this presented as a character whose weapon appeared in his
+hand and who then would not change pose, and it took three wrong diagnoses to
+reach the bytes.
 
 ```
 bun run publish                     # what would change if I staged right now
