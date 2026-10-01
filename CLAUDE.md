@@ -26,6 +26,14 @@ Quaternius assets are organized and snap together — reskin/equip conventions, 
 character kit, modular-kit grids, which animation clips the subsets keep).
 This file is about the *tooling*.
 
+**Open work lives on the Virta board, not in a file here.** `virta project brief`
+opens a session with what changed; `virta list "project:static-assets"` is what is
+open. `virta project init` wired the MCP server and the brief hooks into this repo
+(`.mcp.json`, `.claude/settings.json`), so a session knows the board without being
+told. CONTENT-MAP.md keeps the *decisions*; the board keeps the *work*. File new
+work with `virta new` — a checklist in a doc drifts from the board, which is the
+reason the board exists.
+
 ## Commands
 
 - `bun run scan` — discover source models with no glb and write `convert` specs into
