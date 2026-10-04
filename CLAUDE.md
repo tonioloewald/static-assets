@@ -466,6 +466,19 @@ const rocks = items.filter((i) => i.category === 'rock')
 Loaders fetch cross-origin, so `Access-Control-Allow-Origin: *` is required — it's
 set for every file by the generated config.
 
+## Rollouts not applicable here
+
+Recorded once, as the practices repo asks, so the checks stop asking:
+
+- **Not applicable: Rollout #2556 (Prettier never touches markdown)** — there is no
+  Prettier in this repo. `package.json` declares zero dependencies and no formatter;
+  the markdown `requirePragma` override has no config to live in.
+- **Not applicable: Rollout #2557 (publish through the shared workflow)** — this repo
+  has no `.github/workflows/publish.yml` and publishes nothing to npm
+  (`"private": true`, no version). It ships bytes to a CDN with `wrangler`, so there
+  is no npm credential for a code-free job to hold. The board recorded this one from
+  its own check.
+
 ## Assumption to verify on first deploy
 
 `bin/mirror.ts` assumes Firebase applies **all** matching `headers` blocks (the
