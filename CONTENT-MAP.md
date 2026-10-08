@@ -405,3 +405,27 @@ What stays here is what was DECIDED, which is documentation rather than a task:
   `building` in two), Modular Dungeon + Modular Space (`template-` prefixes hiding
   wall/floor), Marble (`s-curve-*` → a one-letter `s` category), Minigolf
   (support/supports). Plus Brick Kit, done earlier.
+
+## Quaternius nature library (`quaternius/libraries/nature.glb`)
+
+A curated third of the Ultimate Nature Pack: 64 of 150 models, 3.3 MB. Base
+trees (CommonTree, PineTree, BirchTree, Willow ×5, PalmTree ×4), dead trees,
+bushes, cacti, grass, flowers, plants, a stump and a log.
+
+**Left out on purpose:** every `_Snow`, `_Autumn` and `_Moss` variant, and the
+rocks. tosijs-3d colours vegetation by climate and season in its biome shader
+and makes rocks procedurally, so the variants add nothing there, and leaving
+them out keeps this from being a mirror of a pack its author sells.
+
+- Source: `assets/quaternius/nature/source/OBJ` (the pack as bought), list in
+  `nature/keep.txt`, converted one by one with
+  `Blender --background --factory-startup --python bin/blender-export.py -- single in.obj out.glb`
+  into `nature/glb/`. The library spec reads that folder. Converted by hand
+  rather than as `convert` specs because a spec's output is itself published,
+  which would put all 64 individual files on the CDN as well.
+- Scale: a tree is 2.5 to 5 units tall, so tosijs-3d's rules scale trees by
+  about 3 to 4.5.
+- **Material names are load-bearing.** Quaternius' own (`Wood`, `Green`,
+  `DarkGreen`, `White`, `Black`, `Leaves`, …) survive into the glb, and
+  tosijs-3d's decorator maps them to roles (leaf, evergreen, bark). Renaming
+  them breaks the shading silently.

@@ -93,6 +93,26 @@
       "from": [
         "hairstyles"
       ]
+    },
+    {
+      "slug": "nature",
+      "note": "A CURATED THIRD of Quaternius' Ultimate Nature Pack (64 of 150 models): the base trees (common, pine, birch, willow, palm), the dead trees, bushes, cacti, grass, flowers, plants, a stump and a log. Deliberately NOT the _Snow, _Autumn and _Moss variants, nor the rocks: tosijs-3d colours vegetation by climate and season in its biome shader, and makes its rocks procedurally, so the variants would be dead weight and shipping them would only make this a mirror of a pack its author sells. The glbs in nature/glb are converted from nature/source/OBJ with bin/blender-export.py (single mode); the list is nature/keep.txt. Material NAMES are Quaternius' own (Wood, Green, DarkGreen, White, Black, ...) and are load-bearing: the decorator maps them to roles (bark, leaf).",
+      "from": [
+        "nature/glb"
+      ],
+      "categories": {
+        "*Tree_Dead_*": "deadtree",
+        "Willow_Dead_*": "deadtree",
+        "*Tree_*": "tree",
+        "Willow_*": "tree",
+        "Bush*": "bush",
+        "Cactus*": "cactus",
+        "Grass*": "grass",
+        "Flowers": "flower",
+        "Plant_*": "plant",
+        "TreeStump": "stump",
+        "WoodLog": "log"
+      }
     }
   ],
   "convert": [
