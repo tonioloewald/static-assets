@@ -124,6 +124,39 @@
         ]
       },
       {
+        "source": "/noaa/earth/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "NOAA NCEI — ETOPO 2022 Global Relief Model (60 arc-second, ice surface)"
+          },
+          {
+            "key": "license",
+            "value": "CC0-1.0 — NOAA waives any potential copyright and related rights worldwide (Creative Commons Zero 1.0 Universal Public Domain Dedication)"
+          },
+          {
+            "key": "Link",
+            "value": "<https://doi.org/10.25921/fd45-gt74>; rel=\"author\"; title=\"NOAA NCEI — ETOPO 2022 Global Relief Model (60 arc-second, ice surface)\""
+          },
+          {
+            "key": "projection",
+            "value": "equirectangular 2:1; longitude -180..+180 left to right, latitude +90..-90 top to bottom"
+          },
+          {
+            "key": "height-encoding",
+            "value": "uint16be; metres = value - 32768"
+          },
+          {
+            "key": "body-radius-km",
+            "value": "6371.0"
+          },
+          {
+            "key": "not-for-navigation",
+            "value": "high quality for planning and modelling; NOAA states it is not suitable for navigation"
+          }
+        ]
+      },
+      {
         "source": "/nasa/moon/**",
         "headers": [
           {

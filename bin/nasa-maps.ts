@@ -42,14 +42,21 @@
  * `publish` glob names, so they stay off the CDN — see CLAUDE.md, Publishing.
  */
 
-import { existsSync, mkdirSync, statSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync, mkdirSync, statSync, readFileSync, writeFileSync,
+  openSync, writeSync, closeSync,
+} from 'node:fs'
+import { readFloat32Tiff } from './geotiff-f32'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const NASA = join(ROOT, 'assets', 'nasa')
-const SRC = join(NASA, 'source')
-const TMP = join(SRC, 'tmp')
+const ASSETS = join(ROOT, 'assets')
+const TMP = join(ASSETS, '.tmp-maps')
+/** Where a body's outputs and its unpublished originals live. */
+const outDir = (body: string) => join(ASSETS, BODIES[body].dir ?? `nasa/${body}`)
+const srcDir = (body: string) =>
+  join(ASSETS, (BODIES[body].dir ?? `nasa/${body}`).split('/')[0], 'source')
 
 const args = process.argv.slice(2)
 const FORCE = args.includes('--force')
@@ -93,6 +100,8 @@ interface HeightSource {
   toMetres?: { scale: number; bias: number }
   /** 8-bit source with no documented elevation scale: ships as a relative map. */
   relative?: boolean
+  /** A tiled float32 GeoTIFF, decoded by bin/geotiff-f32.ts (ffmpeg cannot read one). */
+  float32?: boolean
   /**
    * Rotate by half the width, to put longitude 0 in the middle.
    *
@@ -107,7 +116,14 @@ interface HeightSource {
   rollHalf?: boolean
 }
 
-const BODIES: Record<string, { colour: ColourSource; height: HeightSource }> = {
+interface Body {
+  /** Output path under assets/, default `nasa/<name>`. Elevation from NOAA is not NASA's. */
+  dir?: string
+  colour?: ColourSource
+  height: HeightSource
+}
+
+const BODIES: Record<string, Body> = {
   moon: {
     colour: { file: 'lroc_color_poles_4k.tif', url: `${SVS}/lroc_color_poles_4k.tif`, q: 4 },
     height: {
@@ -137,6 +153,29 @@ const BODIES: Record<string, { colour: ColourSource; height: HeightSource }> = {
       file: 'gebco_elev_21600x10800.png',
       url: `${EO}/73934/gebco_08_rev_elev_21600x10800.png`,
       relative: true,
+    },
+  },
+  /*
+  Earth's elevation done properly, and the reason it is a separate namespace:
+  this is NOAA's, not NASA's, and pretending otherwise would be the one thing
+  the attribution rules here exist to prevent. It pairs with nasa/earth's colour
+  map — same projection, same encoding — and supersedes nasa/earth/height-*,
+  which is 8-bit, land-only and kept only so the NASA set stays whole.
+
+  ETOPO 2022 at 60 arc-seconds is 21600x10800, which is 5x more than the 4k
+  output needs; the 30 arc-second version is 1.5 GB and would buy nothing here.
+  `surface` rather than `bed`: it includes the Greenland and Antarctic ice
+  sheets, which is what the Blue Marble colour map shows.
+  */
+  'earth-relief': {
+    dir: 'noaa/earth',
+    height: {
+      file: 'ETOPO_2022_v1_60s_surface.tif',
+      url:
+        'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2022/data/60s/' +
+        '60s_surface_elev_gtif/ETOPO_2022_v1_60s_N90W180_surface.tif',
+      toMetres: { scale: 1, bias: 0 },
+      float32: true, // IEEE float32 metres; N90W180 means it already runs -180..180
     },
   },
 }
@@ -250,15 +289,15 @@ async function buildColour(body: string, spec: ColourSource): Promise<void> {
     if (spec.tiles) {
       await stitchTiles(spec.tiles.base, spec.tiles.z, master)
     } else {
-      const src = join(SRC, spec.file!)
+      const src = join(srcDir(body), spec.file!)
       await fetchTo(spec.url!, src)
       await sh(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', src, master])
     }
   }
   for (const { tag, w } of SIZES) {
-    const out = join(NASA, body, `color-${tag}.jpg`)
+    const out = join(outDir(body), `color-${tag}.jpg`)
     if (existsSync(out) && !FORCE) continue
-    mkdirSync(join(NASA, body), { recursive: true })
+    mkdirSync(outDir(body), { recursive: true })
     const scaled = join(TMP, `${body}_c_${tag}.png`)
     await sh([
       'ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', master,
@@ -277,7 +316,7 @@ async function buildColour(body: string, spec: ColourSource): Promise<void> {
 // ------------------------------------------------------------------- height ---
 
 async function buildHeight(body: string, spec: HeightSource): Promise<void> {
-  const src = join(SRC, spec.file)
+  const src = join(srcDir(body), spec.file)
   await fetchTo(spec.url, src)
   mkdirSync(TMP, { recursive: true })
 
@@ -304,10 +343,47 @@ async function buildHeight(body: string, spec: HeightSource): Promise<void> {
     decodable = pgm
   }
 
+  /*
+  A float32 GeoTIFF is quantised to the output encoding BEFORE it is scaled.
+
+  Not for tidiness: the samples are signed metres, so every sea-floor value is
+  negative, and anything that reads them as unsigned turns -100 m into 65436.
+  Scaling THAT is not merely wrong, it is wrong worst exactly at the coastlines,
+  where an interpolator would run between 65436 and 50 and invent a mountain
+  range along every shore. Going to metres + 32768 first keeps the values
+  monotonic, so the scale that follows is just a scale.
+
+  Streamed a band at a time: the full raster is 933 MB as float32 and never needs
+  to exist at once.
+  */
+  if (spec.float32) {
+    const pgm = join(TMP, `${body}_f32.pgm`)
+    if (!existsSync(pgm)) {
+      const r = readFloat32Tiff(src)
+      const fd = openSync(pgm, 'w')
+      writeSync(fd, Buffer.from(`P5\n${r.width} ${r.height}\n65535\n`, 'latin1'))
+      let clipped = 0
+      r.bands((y0, rows, data) => {
+        const buf = Buffer.alloc(rows * r.width * 2)
+        for (let i = 0; i < data.length; i++) {
+          const stored = Math.round(data[i]) + HEIGHT_OFFSET
+          const v = Math.max(0, Math.min(65535, stored))
+          if (v !== stored) clipped++
+          buf.writeUInt16BE(v, i * 2)
+        }
+        writeSync(fd, buf)
+      })
+      closeSync(fd)
+      if (clipped) throw new Error(`${spec.file}: ${clipped} samples outside the uint16 range`)
+      console.log(`    decoded ${spec.file} (float32 geotiff ${r.width}x${r.height}) -> pgm`)
+    }
+    decodable = pgm
+  }
+
   for (const { tag, w } of SIZES) {
-    const out = join(NASA, body, `height-${tag}.png`)
+    const out = join(outDir(body), `height-${tag}.png`)
     if (existsSync(out) && !FORCE) continue
-    mkdirSync(join(NASA, body), { recursive: true })
+    mkdirSync(outDir(body), { recursive: true })
 
     if (spec.relative) {
       // 8-bit in, 8-bit out. Promoting it to 16 bits would add bytes and no
@@ -346,7 +422,7 @@ async function buildHeight(body: string, spec: HeightSource): Promise<void> {
     const needsTransform = !(scale === 1 && bias + HEIGHT_OFFSET === 32768)
     for (let i = 0; i < pw * ph; i++) {
       const v = (data[i * 2] << 8) | data[i * 2 + 1]
-      const metres = spec.raw ? v - HEIGHT_OFFSET : v * scale + bias
+      const metres = spec.raw || spec.float32 ? v - HEIGHT_OFFSET : v * scale + bias
       if (metres < min) min = metres
       if (metres > max) max = metres
       if (needsTransform) {
@@ -378,10 +454,11 @@ for (const body of wanted) {
     process.exit(1)
   }
   console.log(`\n${body}:`)
-  await buildColour(body, spec.colour)
+  if (spec.colour) await buildColour(body, spec.colour)
   await buildHeight(body, spec.height)
 }
 console.log(
-  `\nnasa-maps: ${wanted.join(', ')} -> assets/nasa/. Sources kept in assets/nasa/source/ ` +
-    `(unpublished). Elevation: metres = uint16be value - ${HEIGHT_OFFSET}.`
+  `\nnasa-maps: ${wanted.map((b) => BODIES[b].dir ?? `nasa/${b}`).join(', ')}. ` +
+    `Sources stay in each namespace's source/ (unpublished). ` +
+    `Elevation: metres = uint16be value - ${HEIGHT_OFFSET}.`
 )

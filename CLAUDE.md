@@ -82,7 +82,8 @@ publish is driven by `metadata.json` — you rarely touch anything else.
 | `bin/blender-export.py` | Blender headless: fbx/blend → glb, with animation merging. |
 | `bin/subset-glb.ts` | glTF surgery: drop animations from a glb (no Blender). Library + CLI. |
 | `bin/publish.ts` | Targeted rebuild + a diff of what would change on the CDN, then deploy. |
-| `bin/nasa-maps.ts` | Fetches NASA planetary colour/elevation maps and cuts them to 1k/2k/4k. |
+| `bin/nasa-maps.ts` | Fetches planetary colour/elevation maps (NASA + NOAA) and cuts them to 1k/2k/4k. |
+| `bin/geotiff-f32.ts` | Reads tiled float32 Deflate GeoTIFFs, which ffmpeg cannot. Library + CLI. |
 | `bin/library-glb.ts` | glTF surgery: merge a pack of models into one glb, and cut subsets of it. Library + CLI. |
 | `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |
 
@@ -469,6 +470,9 @@ the whole value of the script:
   GeoTIFF), so it is stitched from Mars Trek's WMTS level 3 — 16x8 tiles of 256 px,
   which is exactly 4096x2048.
 
+**Earth's elevation lives under `/noaa/`, not here** — see below. `nasa/earth/height-*`
+is kept so the NASA set stays whole, but it is the weak one:
+
 **Earth's height map is the weak one, and says so in its own headers.** NASA
 publishes that global elevation image at 8 bits with no documented metre scale, and
 its ocean floor is flat — every ocean pixel is 0, verified against the mid-Pacific,
@@ -477,8 +481,42 @@ Promoting it to 16 bits would add bytes and no information; inventing a metre sc
 would be worse. A real fix means a real DEM (ETOPO 2022 is 16-bit with bathymetry),
 which is NOAA, not NASA, so it would want its own namespace.
 
-Originals live in `assets/nasa/source/` and no `publish` glob names them, so the
-multi-GB inputs stay off the CDN while the spec that rebuilds them stays in git.
+Originals live in each namespace's `source/` and no `publish` glob names them, so
+the multi-GB inputs stay off the CDN while the spec that rebuilds them stays in git.
+
+### `/noaa/earth/height-*.png` — the real Earth DEM
+
+ETOPO 2022 at 60 arc-seconds (21600x10800), same projection, same encoding, same
+sizes as everything else — so it drops straight in beside `nasa/earth/color-*.jpg`.
+**Use this one.** It is 16-bit, metre-accurate, and it has a sea floor: the
+mid-Pacific reads -4420 m where NASA's image reads 0.
+
+A separate namespace because it is NOAA's data and labelling it NASA's is exactly
+what the attribution rules here exist to prevent. **The licence was checked before
+anything was downloaded** — NCEI's metadata record states a CC0-1.0 dedication
+outright ("NOAA waives any potential copyright and related rights in these data
+worldwide"), which is the only reason this pack exists. NOAA's own
+not-for-navigation disclaimer rides in a response header.
+
+Verified against known features at 4k: Mariana Trench -9400 m, Mid-Atlantic Ridge
+-3622 m (shallower than the -4563 m abyss beside it, as a ridge should be), Arctic
+Ocean -3053 m, Antarctic ice +2327 m, Andes +4802 m. Peaks read low — Everest's
+region gives +6288 against a true 8849 — because a 21600-wide source averaged to
+4096 flattens anything narrower than a cell. That is correct behaviour for a
+displacement map, not an error.
+
+**ffmpeg cannot read this file at all.** It is tiled float32 with Deflate and the
+floating-point predictor, and ffmpeg answers "Could not find codec parameters:
+unspecified size", so `bin/geotiff-f32.ts` decodes it: inflate each 256x256 tile,
+undo the predictor (a byte-wise running sum, then a transpose out of byte planes),
+read little-endian floats. It streams a tile-band at a time, so the 933 MB raster
+never exists at once, and it refuses anything outside tiled/float32/Deflate by
+name rather than guessing — a silently misread elevation model still looks like
+terrain. Two traps worth keeping: TIFF's Deflate is zlib-WRAPPED, so
+`Bun.inflateSync` (raw-only) fails with "invalid stored block lengths" and
+`node:zlib` is needed; and the samples are signed metres, so they are quantised to
+`metres + 32768` BEFORE scaling — read as unsigned, -100 m is 65436, and an
+interpolator would invent a mountain range along every coastline.
 
 ## Adding a pack
 

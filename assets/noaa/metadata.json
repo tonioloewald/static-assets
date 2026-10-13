@@ -1,0 +1,12 @@
+{
+  "credit": "NOAA National Centers for Environmental Information",
+  "license": "CC0-1.0 — NOAA waives any potential copyright and related rights worldwide (Creative Commons Zero 1.0 Universal Public Domain Dedication)",
+  "link": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
+  "headers": {
+    "projection": "equirectangular 2:1; longitude -180..+180 left to right, latitude +90..-90 top to bottom"
+  },
+  "note": "A separate namespace from nasa/ on purpose: this is NOAA's data, and labelling it NASA's would be the exact thing the attribution rules here exist to prevent. The licence was checked before anything was downloaded — NCEI's metadata record states the CC0-1.0 dedication explicitly, which is why this pack exists at all.\n\nSame conventions as nasa/: equirectangular 2:1, longitude -180..+180, and 16-bit big-endian elevation where metres = value - 32768.",
+  "publish": [
+    "*/height-*.png"
+  ]
+}

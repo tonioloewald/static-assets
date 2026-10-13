@@ -1,0 +1,10 @@
+{
+  "credit": "NOAA NCEI — ETOPO 2022 Global Relief Model (60 arc-second, ice surface)",
+  "link": "https://doi.org/10.25921/fd45-gt74",
+  "headers": {
+    "height-encoding": "uint16be; metres = value - 32768",
+    "body-radius-km": "6371.0",
+    "not-for-navigation": "high quality for planning and modelling; NOAA states it is not suitable for navigation"
+  },
+  "note": "THE ELEVATION MAP nasa/earth SHOULD HAVE HAD. NASA's published global elevation image is 8-bit with no documented metre scale and a completely flat sea floor; this is a real DEM — 16-bit, metre-accurate, with bathymetry. Pair it with nasa/earth/color-*.jpg: same projection, same encoding, same sizes. nasa/earth/height-* is kept so the NASA set stays whole, but this is the one to use.\n\nCite as: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 Global Relief Model. https://doi.org/10.25921/fd45-gt74 — NOAA's own recommended citation names the 15 arc-second model; what is published here is the 60 arc-second surface variant, which at 21600x10800 is still five times the 4k output and makes the 1.5 GB 30 arc-second download pointless for this purpose.\n\n`surface` rather than `bed`: it includes the Greenland and Antarctic ice sheets, which is what the Blue Marble colour map shows. The bedrock variant is one line in bin/nasa-maps.ts if the ice-free shape is ever wanted.\n\nNOAA's disclaimer travels with the bytes in the not-for-navigation header, as it should."
+}
