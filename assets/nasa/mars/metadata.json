@@ -1,0 +1,9 @@
+{
+  "credit": "NASA/JPL/USGS — Viking MDIM 2.1 colour mosaic (via Mars Trek); MGS MOLA MEGDR elevation (PDS Geosciences Node)",
+  "link": "https://trek.nasa.gov/mars/",
+  "headers": {
+    "height-encoding": "uint16be; metres above the areoid = value - 32768",
+    "body-radius-km": "3396.0"
+  },
+  "note": "Colour is the 12.7 GB Viking MDIM21 global mosaic, which is not downloadable in one piece — it is assembled from Mars Trek's WMTS level 3, which is 16x8 tiles of 256 px and so exactly 4096x2048. Elevation is MEGDR at 16 pixels/degree (megt90n000eb.img), raw big-endian signed int16 metres, rotated half a width to match the colour map's longitude convention. Verified against named features: Olympus Mons +20504 m, Hellas Basin -6042 m."
+}

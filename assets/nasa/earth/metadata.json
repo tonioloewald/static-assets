@@ -1,0 +1,9 @@
+{
+  "credit": "NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli); elevation image derived from GEBCO",
+  "link": "https://earthobservatory.nasa.gov/features/BlueMarble",
+  "headers": {
+    "height-encoding": "uint8; RELATIVE only — no documented metre scale, and ocean floor is flat",
+    "body-radius-km": "6371.0"
+  },
+  "note": "TWO LIMITATIONS, both the source's and both worth knowing before you use the height map.\n\n1. It is 8-BIT, not 16. NASA publishes this global elevation image at 8 bits with no documented metre mapping, so it ships as it arrived. Promoting it to 16 bits would add bytes and no information and imply a precision it does not have; inventing a metre scale would be worse. Treat it as a relative bump map.\n2. There is NO BATHYMETRY. Every ocean pixel is 0 — verified by sampling the mid-Pacific, the Mariana Trench and the mid-Atlantic. Land varies as expected (Sahara 21, Himalaya 125, Andes 143), so it is land elevation only, and a displaced sphere will have a billiard-ball sea floor.\n\nIf either matters, the fix is a real DEM — ETOPO 2022 is 16-bit and includes bathymetry — but it is NOAA rather than NASA, so it would want its own namespace.\n\nColour is the December 2004 Blue Marble topography+bathymetry composite, which DOES shade the ocean floor; it is only the elevation channel that is land-only."
+}

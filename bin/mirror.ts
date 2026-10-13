@@ -187,6 +187,9 @@ const walk = (
   }
 }
 
+/** Every path staged into public/, for working out which header rules earn their keep. */
+const stagedPaths: string[] = []
+
 /**
  * `derived/` IS the shipped tree — built output plus whatever `publish` pushed
  * into it — so staging it is a copy, with no second opinion about what belongs.
@@ -201,7 +204,9 @@ const stageTree = (root: string): void => {
       const abs = join(dir, entry.name)
       if (entry.isDirectory()) rec(abs)
       else {
-        link(abs, join(OUT, toPosix(relative(root, abs))))
+        const rel = toPosix(relative(root, abs))
+        link(abs, join(OUT, rel))
+        stagedPaths.push(rel)
         files++
       }
     }
@@ -241,10 +246,37 @@ if (pushedPaths.size || existsSync(PUSHED_MANIFEST)) {
 stageTree(DERIVED)
 
 // ---- generate host config (Cloudflare _headers + firebase.json) -----------
-// Shallow rules first so deeper (more specific) namespace rules cascade last and
-// win on any key collision. The common block carries CORS/cache/noindex; both host
-// formats are generated from the SAME rules so the deploy target is a DNS choice.
+// The common block carries CORS/cache/noindex; both host formats are generated
+// from the SAME rules so the deploy target is a DNS choice.
 rules.sort((a, b) => a.path.split('/').length - b.path.split('/').length)
+
+/*
+DROP ANY RULE WHOSE EVERY FILE IS CLAIMED BY A DEEPER ONE.
+
+This code used to rely on ordering: shallow rules first, so a deeper rule would
+"win on any key collision". Cloudflare does not work that way — MEASURED, on the
+first deploy that had nested metadata. It applies EVERY matching block and
+UNIONS them, so /nasa/* and /nasa/mars/* both landed on a Mars file and it came
+back carrying two `credit` headers, one generic and one specific, plus duplicate
+`license` and `projection`. A consumer asking for `credit` gets both joined, so
+the specific attribution is no better than noise.
+
+Each rule already carries its full effective header set (ancestors are folded in
+when it is built), so a rule is only needed where it is some file's DEEPEST
+match. Where every file beneath it has a deeper rule of its own, the shallower
+one contributes nothing but duplicates, and goes.
+
+The mixed case — files directly in a namespace AND in sub-namespaces that
+override a key — cannot be expressed in this format at all, since `_headers` has
+no way to exclude a path from a pattern. That would still double the conflicting
+key. Nothing hits it today; if something does, the answer is to give those loose
+files a directory of their own rather than to try to out-clever the format.
+*/
+const deepestFor = (file: string): Rule | undefined =>
+  rules.filter((r) => file === r.path || file.startsWith(r.path + '/')).pop()
+const needed = new Set(stagedPaths.map((f) => deepestFor(f)).filter(Boolean) as Rule[])
+const dropped = rules.length - needed.size
+rules.splice(0, rules.length, ...rules.filter((r) => needed.has(r)))
 const COMMON: [string, string][] = [
   ['Access-Control-Allow-Origin', '*'],
   ['Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS'],
@@ -284,6 +316,7 @@ console.log(
   `mirror: ${pushed} pushed → derived/, ` +
     (unpublished ? `${unpublished} stale push(es) removed, ` : '') +
     `${files} file(s) staged → public/ ` +
-    `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s) ` +
+    `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s)` +
+    (dropped ? `, ${dropped} redundant` : '') + ' ' +
     `→ _headers + firebase.json`
 )

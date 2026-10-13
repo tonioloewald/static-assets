@@ -122,6 +122,93 @@
             "value": "<https://product.tosijs.net>; rel=\"author\"; title=\"tosijs-product — demo assets for the doc site at product.tosijs.net\""
           }
         ]
+      },
+      {
+        "source": "/nasa/moon/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "NASA's Scientific Visualization Studio (CGI Moon Kit) — LRO LOLA elevation, LROC WAC colour"
+          },
+          {
+            "key": "license",
+            "value": "NASA media usage guidelines — free to use with credit; credit does not imply endorsement"
+          },
+          {
+            "key": "Link",
+            "value": "<https://svs.gsfc.nasa.gov/4720/>; rel=\"author\"; title=\"NASA's Scientific Visualization Studio (CGI Moon Kit) — LRO LOLA elevation, LROC WAC colour\""
+          },
+          {
+            "key": "projection",
+            "value": "equirectangular 2:1; longitude -180..+180 left to right, latitude +90..-90 top to bottom"
+          },
+          {
+            "key": "height-encoding",
+            "value": "uint16be; metres = value - 32768"
+          },
+          {
+            "key": "body-radius-km",
+            "value": "1737.4"
+          }
+        ]
+      },
+      {
+        "source": "/nasa/earth/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli); elevation image derived from GEBCO"
+          },
+          {
+            "key": "license",
+            "value": "NASA media usage guidelines — free to use with credit; credit does not imply endorsement"
+          },
+          {
+            "key": "Link",
+            "value": "<https://earthobservatory.nasa.gov/features/BlueMarble>; rel=\"author\"; title=\"NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli); elevation image derived from GEBCO\""
+          },
+          {
+            "key": "projection",
+            "value": "equirectangular 2:1; longitude -180..+180 left to right, latitude +90..-90 top to bottom"
+          },
+          {
+            "key": "height-encoding",
+            "value": "uint8; RELATIVE only — no documented metre scale, and ocean floor is flat"
+          },
+          {
+            "key": "body-radius-km",
+            "value": "6371.0"
+          }
+        ]
+      },
+      {
+        "source": "/nasa/mars/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "NASA/JPL/USGS — Viking MDIM 2.1 colour mosaic (via Mars Trek); MGS MOLA MEGDR elevation (PDS Geosciences Node)"
+          },
+          {
+            "key": "license",
+            "value": "NASA media usage guidelines — free to use with credit; credit does not imply endorsement"
+          },
+          {
+            "key": "Link",
+            "value": "<https://trek.nasa.gov/mars/>; rel=\"author\"; title=\"NASA/JPL/USGS — Viking MDIM 2.1 colour mosaic (via Mars Trek); MGS MOLA MEGDR elevation (PDS Geosciences Node)\""
+          },
+          {
+            "key": "projection",
+            "value": "equirectangular 2:1; longitude -180..+180 left to right, latitude +90..-90 top to bottom"
+          },
+          {
+            "key": "height-encoding",
+            "value": "uint16be; metres above the areoid = value - 32768"
+          },
+          {
+            "key": "body-radius-km",
+            "value": "3396.0"
+          }
+        ]
       }
     ]
   }

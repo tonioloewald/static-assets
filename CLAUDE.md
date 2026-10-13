@@ -82,6 +82,7 @@ publish is driven by `metadata.json` — you rarely touch anything else.
 | `bin/blender-export.py` | Blender headless: fbx/blend → glb, with animation merging. |
 | `bin/subset-glb.ts` | glTF surgery: drop animations from a glb (no Blender). Library + CLI. |
 | `bin/publish.ts` | Targeted rebuild + a diff of what would change on the CDN, then deploy. |
+| `bin/nasa-maps.ts` | Fetches NASA planetary colour/elevation maps and cuts them to 1k/2k/4k. |
 | `bin/library-glb.ts` | glTF surgery: merge a pack of models into one glb, and cut subsets of it. Library + CLI. |
 | `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |
 
@@ -432,6 +433,53 @@ Everything raw — and not because a rule catches it, but because nothing pushed
 what was *built*: the libraries. Same for Quaternius' UAL megafiles — they are
 inputs, they are not in `publish`, so they cannot reach the CDN. See Publishing.
 
+## Planetary maps (`/nasa/`)
+
+Equirectangular sphere textures for the Moon, Mars and Earth, built by
+`bin/nasa-maps.ts`: `color-{1k,2k,4k}.jpg` and `height-{1k,2k,4k}.png` per body.
+4096x2048 is where it stops — sharp on a 4K display, where the sources run to 16k
+and beyond.
+
+**The consumer contract, which also rides in the response headers:**
+
+| | |
+| --- | --- |
+| projection | equirectangular 2:1, longitude **-180..+180** left to right, latitude +90..-90 |
+| elevation | `height-*.png` is 16-bit greyscale big-endian; **metres = value - 32768** |
+| Earth's elevation | the exception: 8-bit, RELATIVE, and land-only — see below |
+
+Both choices were measured. **Colour is JPEG because WebP lost**: at ~0.95 MB for
+the 4k lunar map, jpeg q4 scored SSIM 0.970 against webp q82's 0.957, and the
+ordering held at 0.6 MB — low-contrast grey terrain is not what WebP's chroma path
+is good at. **Height is lossless 16-bit PNG** because 8 bits is 256 steps over tens
+of km of relief, which terraces visibly under displacement, and a lossy block
+artefact in a height field is a dent in the terrain.
+
+The sources disagree with each other and are normalised at build time, which is
+the whole value of the script:
+
+- MOLA ships signed metres; the lunar DEM ships unsigned half-metres offset by
+  10 km. Both become `metres + 32768`.
+- MOLA's MEGDR runs **0..360 east**, while the SVS lunar kit, Blue Marble and Mars
+  Trek all centre on 0. The Mars height map is therefore rotated half its width.
+  Without that, Olympus Mons renders half a planet from where its own colour map
+  puts it — and looks like perfectly plausible terrain while doing it. Verified by
+  sampling named features: Olympus Mons +20504 m, Hellas Basin -6042 m.
+- Mars colour has no downloadable web-sized mosaic (Viking MDIM21 is a 12.7 GB
+  GeoTIFF), so it is stitched from Mars Trek's WMTS level 3 — 16x8 tiles of 256 px,
+  which is exactly 4096x2048.
+
+**Earth's height map is the weak one, and says so in its own headers.** NASA
+publishes that global elevation image at 8 bits with no documented metre scale, and
+its ocean floor is flat — every ocean pixel is 0, verified against the mid-Pacific,
+the Mariana Trench and the mid-Atlantic. It ships as it arrived, labelled relative.
+Promoting it to 16 bits would add bytes and no information; inventing a metre scale
+would be worse. A real fix means a real DEM (ETOPO 2022 is 16-bit with bathymetry),
+which is NOAA, not NASA, so it would want its own namespace.
+
+Originals live in `assets/nasa/source/` and no `publish` glob names them, so the
+multi-GB inputs stay off the CDN while the spec that rebuilds them stays in git.
+
 ## Adding a pack
 
 1. `mkdir assets/<name>/` and drop the asset files in (binaries stay local).
@@ -479,10 +527,25 @@ Recorded once, as the practices repo asks, so the checks stop asking:
   is no npm credential for a code-free job to hold. The board recorded this one from
   its own check.
 
-## Assumption to verify on first deploy
+## Header cascade — measured, not assumed
 
-`bin/mirror.ts` assumes Firebase applies **all** matching `headers` blocks (the
-common `**` block + each namespace rule cascade/union, deeper winning on a key
-collision). If a namespaced file is missing CORS or attribution after deploy, that
-assumption is wrong — fold the common headers into each namespace rule in
-`bin/mirror.ts`.
+This used to read "assumption to verify on first deploy": that a host applies all
+matching header blocks with the deeper one winning on a key collision. **The
+second half is false on Cloudflare**, found the first time a namespace had nested
+metadata. It applies every matching block and **unions** them, so `/nasa/*` and
+`/nasa/mars/*` both landed on a Mars file and it came back with two `credit`
+headers — one generic, one specific — plus duplicate `license` and `projection`.
+`Headers.get('credit')` then returns both joined, which makes the specific
+attribution worthless.
+
+So ordering is not the mechanism. Each rule carries its full effective header set
+(ancestors are folded in as it is built), and `mirror.ts` now **drops any rule
+whose every file is claimed by a deeper one**, so each file matches exactly one
+block. The redundant rule is reported: `8 attributed namespace(s), 1 redundant`.
+
+One case the format cannot express: loose files directly in a namespace *and*
+sub-namespaces overriding a key — `_headers` has no way to exclude a path from a
+pattern, so the conflicting key would double. Nothing hits it; if something does,
+give those loose files a directory of their own rather than out-clever the format.
+
+Firebase is still unverified on this point, since Cloudflare is the live host.

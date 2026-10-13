@@ -1,0 +1,9 @@
+{
+  "credit": "NASA's Scientific Visualization Studio (CGI Moon Kit) — LRO LOLA elevation, LROC WAC colour",
+  "link": "https://svs.gsfc.nasa.gov/4720/",
+  "headers": {
+    "height-encoding": "uint16be; metres = value - 32768",
+    "body-radius-km": "1737.4"
+  },
+  "note": "Colour from lroc_color_poles_4k.tif, elevation from ldem_16_uint.tif. SVS states these are optimised for aesthetics rather than science; use the LOLA/LROC source products for measurement. Built range -9043..10633 m, which matches the known lunar span (South Pole-Aitken to the far-side highlands)."
+}
