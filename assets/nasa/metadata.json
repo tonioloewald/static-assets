@@ -8,6 +8,7 @@
   "note": "Planetary colour and elevation maps for sphere rendering, at 1k/2k/4k (4096x2048 is a sharp sphere on a 4K display; the sources go to 16k and we are not shipping that over a network). Built by bin/nasa-maps.ts from the originals in source/, which no publish glob names and which therefore stay off the CDN.\n\nELEVATION ENCODING, uniform across bodies: height-*.png is 16-bit greyscale, big-endian, and metres = value - 32768. The sources disagree with each other (MOLA ships signed metres, the lunar DEM unsigned half-metres offset by 10 km) and are normalised at build time so no consumer has to care. Earth is the stated exception — see earth/metadata.json.\n\nLONGITUDE: every map here is centred on 0, running -180..+180. MOLA's MEGDR natively starts at 0 and runs east to 360, so the Mars height map is rotated half its width at build time; without that, Olympus Mons would render half a planet from where its own colour map puts it, and look like perfectly plausible terrain while doing it.",
   "publish": [
     "*/color-*.jpg",
+    "*/night-*.jpg",
     "*/height-*.png"
   ]
 }

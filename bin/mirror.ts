@@ -284,12 +284,36 @@ const COMMON: [string, string][] = [
   ['X-Robots-Tag', 'noindex'],
 ]
 
+/*
+EVERY CUSTOM HEADER HAS TO BE LISTED OR A BROWSER CANNOT SEE IT.
+
+Reported by tosijs-3d (#3269), measured: `fetch()` succeeds cross-origin and
+`response.headers.get('body-radius-km')` is still null. CORS shows a cross-origin
+caller only the safelisted response headers — Cache-Control, Content-Language,
+Content-Length, Content-Type, Expires, Last-Modified, Pragma — and everything
+else is invisible unless the response names it in Access-Control-Expose-Headers.
+`Access-Control-Allow-Origin: *` does not cover this; it governs whether the
+request is allowed, not which headers are readable.
+
+So the entire premise here — that credit, licence and the map encoding ride with
+every byte — was true of the wire and false of the consumer, which is the worst
+place for a difference like that to hide. It cost a downstream reader the radius
+AND the ability to display the attribution the licence asks for.
+
+Generated from each rule's own keys rather than a hand-kept list, so a header
+added to a metadata.json is readable the moment it exists.
+*/
+const exposeFor = (hs: [string, string][]): [string, string][] => {
+  const names = hs.map(([k]) => k)
+  return names.length ? [...hs, ['Access-Control-Expose-Headers', names.join(', ')] as [string, string]] : hs
+}
+
 // Cloudflare Pages / Netlify `_headers` (+ robots.txt) live INSIDE public/.
 const block = (pattern: string, hs: [string, string][]) =>
   pattern + '\n' + hs.map(([k, v]) => `  ${k}: ${v}`).join('\n') + '\n'
 const headersFile = [
   block('/*', COMMON),
-  ...rules.map((r) => block(`/${r.path}/*`, Object.entries(r.headers))),
+  ...rules.map((r) => block(`/${r.path}/*`, exposeFor(Object.entries(r.headers)))),
 ].join('\n')
 writeFileSync(join(OUT, '_headers'), headersFile)
 writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n')
@@ -305,7 +329,7 @@ const firebase = {
       { source: '**', headers: COMMON.map(([key, value]) => ({ key, value })) },
       ...rules.map((r) => ({
         source: `/${r.path}/**`,
-        headers: Object.entries(r.headers).map(([key, value]) => ({ key, value })),
+        headers: exposeFor(Object.entries(r.headers)).map(([key, value]) => ({ key, value })),
       })),
     ],
   },

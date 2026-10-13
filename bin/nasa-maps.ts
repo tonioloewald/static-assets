@@ -86,6 +86,8 @@ interface ColourSource {
   tiles?: { base: string; z: number }
   /** JPEG quality for ffmpeg's mjpeg encoder: 2 is best, 31 worst. */
   q: number
+  /** Output basename, default `color`. */
+  outName?: string
 }
 
 interface HeightSource {
@@ -102,6 +104,10 @@ interface HeightSource {
   relative?: boolean
   /** A tiled float32 GeoTIFF, decoded by bin/geotiff-f32.ts (ffmpeg cannot read one). */
   float32?: boolean
+  /** Output basename, default `height`. Lets one body ship more than one surface. */
+  outName?: string
+  /** This body has no elevation of its own (a colour-only product). */
+  skip?: boolean
   /**
    * Rotate by half the width, to put longitude 0 in the middle.
    *
@@ -167,6 +173,41 @@ const BODIES: Record<string, Body> = {
   `surface` rather than `bed`: it includes the Greenland and Antarctic ice
   sheets, which is what the Blue Marble colour map shows.
   */
+  /*
+  Earth at night: the VIIRS day/night band, which is an EMISSIVE map rather than
+  an albedo one — it belongs on a material's emissive channel, lit by nothing, so
+  the dark side of a globe shows city light instead of black.
+  */
+  'earth-night': {
+    dir: 'nasa/earth',
+    colour: {
+      file: 'BlackMarble_2016_3km_geo.tif',
+      url:
+        'https://eoimages.gsfc.nasa.gov/images/imagerecords/144000/144898/' +
+        'BlackMarble_2016_3km_geo.tif',
+      q: 4,
+      outName: 'night',
+    },
+    height: { file: '', url: '', skip: true },
+  },
+  /*
+  The same planet with its ice taken off. Worth shipping because the PAIR is more
+  than either half: subtract bedrock from surface and you have an ice thickness
+  map, which is how you find the ice sheets in order to render them as ice rather
+  than as rock that happens to be white.
+  */
+  'earth-bedrock': {
+    dir: 'noaa/earth',
+    height: {
+      file: 'ETOPO_2022_v1_60s_bed.tif',
+      url:
+        'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2022/data/60s/' +
+        '60s_bed_elev_gtif/ETOPO_2022_v1_60s_N90W180_bed.tif',
+      toMetres: { scale: 1, bias: 0 },
+      float32: true,
+      outName: 'bedrock',
+    },
+  },
   'earth-relief': {
     dir: 'noaa/earth',
     height: {
@@ -295,7 +336,7 @@ async function buildColour(body: string, spec: ColourSource): Promise<void> {
     }
   }
   for (const { tag, w } of SIZES) {
-    const out = join(outDir(body), `color-${tag}.jpg`)
+    const out = join(outDir(body), `${spec.outName ?? 'color'}-${tag}.jpg`)
     if (existsSync(out) && !FORCE) continue
     mkdirSync(outDir(body), { recursive: true })
     const scaled = join(TMP, `${body}_c_${tag}.png`)
@@ -308,7 +349,8 @@ async function buildColour(body: string, spec: ColourSource): Promise<void> {
       '-q:v', String(spec.q), out,
     ])
     console.log(
-      `    color-${tag}.jpg  ${w}x${w / 2}  ${mb(statSync(out).size)}  SSIM ${await ssim(out, scaled)}`
+      `    ${spec.outName ?? 'color'}-${tag}.jpg  ${w}x${w / 2}  ` +
+        `${mb(statSync(out).size)}  SSIM ${await ssim(out, scaled)}`
     )
   }
 }
@@ -381,7 +423,7 @@ async function buildHeight(body: string, spec: HeightSource): Promise<void> {
   }
 
   for (const { tag, w } of SIZES) {
-    const out = join(outDir(body), `height-${tag}.png`)
+    const out = join(outDir(body), `${spec.outName ?? 'height'}-${tag}.png`)
     if (existsSync(out) && !FORCE) continue
     mkdirSync(outDir(body), { recursive: true })
 
@@ -392,7 +434,7 @@ async function buildHeight(body: string, spec: HeightSource): Promise<void> {
         'ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', decodable,
         '-vf', `scale=${w}:${w / 2}:flags=lanczos`, '-pix_fmt', 'gray', out,
       ])
-      console.log(`    height-${tag}.png  ${w}x${w / 2}  ${mb(statSync(out).size)}  8-bit relative`)
+      console.log(`    ${spec.outName ?? 'height'}-${tag}.png  ${w}x${w / 2}  ${mb(statSync(out).size)}  8-bit relative`)
       continue
     }
 
@@ -438,7 +480,7 @@ async function buildHeight(body: string, spec: HeightSource): Promise<void> {
       '-pix_fmt', 'gray16be', out,
     ])
     console.log(
-      `    height-${tag}.png  ${w}x${w / 2}  ${mb(statSync(out).size)}  ` +
+      `    ${spec.outName ?? 'height'}-${tag}.png  ${w}x${w / 2}  ${mb(statSync(out).size)}  ` +
         `16-bit, ${Math.round(min)}..${Math.round(max)} m`
     )
   }
@@ -455,7 +497,7 @@ for (const body of wanted) {
   }
   console.log(`\n${body}:`)
   if (spec.colour) await buildColour(body, spec.colour)
-  await buildHeight(body, spec.height)
+  if (!spec.height.skip) await buildHeight(body, spec.height)
 }
 console.log(
   `\nnasa-maps: ${wanted.map((b) => BODIES[b].dir ?? `nasa/${b}`).join(', ')}. ` +

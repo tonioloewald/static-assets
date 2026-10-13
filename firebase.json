@@ -44,6 +44,10 @@
           {
             "key": "Link",
             "value": "<https://quaternius.com>; rel=\"author\"; title=\"Quaternius — Universal Animation Library + character packs\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
           }
         ]
       },
@@ -61,6 +65,10 @@
           {
             "key": "Link",
             "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"tosijs-3d — demo assets for the doc site at 3d.tosijs.net\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
           }
         ]
       },
@@ -78,6 +86,10 @@
           {
             "key": "Link",
             "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"tosijs-3d — placeholder voice acting generated with Resemble / Chatterbox\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
           }
         ]
       },
@@ -103,6 +115,10 @@
           {
             "key": "patreon",
             "value": "https://patreon.com/kenney"
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link, social, patreon"
           }
         ]
       },
@@ -120,6 +136,10 @@
           {
             "key": "Link",
             "value": "<https://product.tosijs.net>; rel=\"author\"; title=\"tosijs-product — demo assets for the doc site at product.tosijs.net\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
           }
         ]
       },
@@ -153,6 +173,10 @@
           {
             "key": "not-for-navigation",
             "value": "high quality for planning and modelling; NOAA states it is not suitable for navigation"
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link, projection, height-encoding, body-radius-km, not-for-navigation"
           }
         ]
       },
@@ -182,6 +206,10 @@
           {
             "key": "body-radius-km",
             "value": "1737.4"
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link, projection, height-encoding, body-radius-km"
           }
         ]
       },
@@ -190,7 +218,7 @@
         "headers": [
           {
             "key": "credit",
-            "value": "NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli); elevation image derived from GEBCO"
+            "value": "NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli) and Black Marble 2016 night lights (Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román, NASA GSFC); elevation image derived from GEBCO"
           },
           {
             "key": "license",
@@ -198,7 +226,7 @@
           },
           {
             "key": "Link",
-            "value": "<https://earthobservatory.nasa.gov/features/BlueMarble>; rel=\"author\"; title=\"NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli); elevation image derived from GEBCO\""
+            "value": "<https://earthobservatory.nasa.gov/features/BlueMarble>; rel=\"author\"; title=\"NASA Earth Observatory — Blue Marble Next Generation (Reto Stöckli) and Black Marble 2016 night lights (Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román, NASA GSFC); elevation image derived from GEBCO\""
           },
           {
             "key": "projection",
@@ -211,6 +239,10 @@
           {
             "key": "body-radius-km",
             "value": "6371.0"
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link, projection, height-encoding, body-radius-km"
           }
         ]
       },
@@ -240,6 +272,10 @@
           {
             "key": "body-radius-km",
             "value": "3396.0"
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link, projection, height-encoding, body-radius-km"
           }
         ]
       }

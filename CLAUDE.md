@@ -441,6 +441,11 @@ Equirectangular sphere textures for the Moon, Mars and Earth, built by
 4096x2048 is where it stops — sharp on a 4K display, where the sources run to 16k
 and beyond.
 
+Per body: `color-{1k,2k,4k}.jpg` plus `height-*`; Earth also has `night-*.jpg`
+(VIIRS city lights, an **emissive** map — note it carries a faint moonlit base
+rather than pure black, so the whole night side glows slightly). Earth's real
+elevation is `/noaa/earth/`, below.
+
 **The consumer contract, which also rides in the response headers:**
 
 | | |
@@ -483,6 +488,10 @@ which is NOAA, not NASA, so it would want its own namespace.
 
 Originals live in each namespace's `source/` and no `publish` glob names them, so
 the multi-GB inputs stay off the CDN while the spec that rebuilds them stays in git.
+
+**Custom headers need `Access-Control-Expose-Headers` or a browser cannot read
+them** — see Header cascade. All of this metadata was invisible to the one
+consumer that matters until tosijs-3d measured it (#3269).
 
 ### `/noaa/earth/height-*.png` — the real Earth DEM
 
@@ -587,3 +596,18 @@ pattern, so the conflicting key would double. Nothing hits it; if something does
 give those loose files a directory of their own rather than out-clever the format.
 
 Firebase is still unverified on this point, since Cloudflare is the live host.
+
+**Second finding, same area: `Access-Control-Allow-Origin: *` does NOT make these
+headers readable.** CORS shows a cross-origin caller only the safelisted response
+headers; everything else needs naming in `Access-Control-Expose-Headers`. So the
+premise this repo is built on — credit, licence and encoding ride with every byte
+— was true of the wire and false of the consumer, which is the worst place for a
+difference like that to hide. tosijs-3d found it (#3269): `fetch` succeeded and
+`headers.get('body-radius-km')` was null, so a planet silently kept default
+dimensions and the attribution the licence asks for could not be displayed.
+
+`mirror.ts` now emits `Access-Control-Expose-Headers` per rule, **generated from
+that rule's own keys**, so a header added to a metadata.json is readable the moment
+it exists. Note the fix changes only `_headers`, and a browser holding an
+`immutable` response from before it keeps the old headers for a year — a
+cache-busting query gets them at once.
