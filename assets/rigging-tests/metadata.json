@@ -1,0 +1,7 @@
+{
+  "credit": "Tonio Loewald (exported from Cheetah3D, 2026-10-16)",
+  "license": "Not yet stated; nothing here is published until it is",
+  "link": "https://3d.tosijs.net",
+  "note": "Unrigged humanoid meshes for tosijs-3d's auto-rigger (Mixamo-style markers, then skeleton fitting and binding): tosijs-3d board #3349. All stand in a T-pose, up +Y, facing +Z, feet near y = 0, in different units. omnidude.obj is the whole omnidude scene: the body is the objects `Omnidude` and `Head` (about 1.8 tall); `TrenchCoat.clothing` and `Fedora.clothing` are accessories made for him (#3350); the weapons, Box, Cylinder, Chair, Ladder, Stairs and the obstacles are props. weasel.obj is a cartoon weasel (`Weasel`, about 1.4 tall) in a `spacesuit` and `helmet`, eyes separate. weasel-skinny.obj is a thinner weasel (`Body`, `Head`, `Tail`, `Collar`, `Eyes`, `helmet`, about 1.6 tall to the eyes); its tail is a limb the rig does not have. weasel-chunky.obj is NOT usable yet: its geometry is doubled (a shell for cartoon outlines) and it is about 7.8 units tall. space-marine.glb is one mesh (`EvilMarineBody`, about 4.4 tall), no skin, no textures. No `publish` glob on purpose: these are local fixtures until the license is settled.",
+  "publish": []
+}
