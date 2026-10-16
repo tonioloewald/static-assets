@@ -144,6 +144,27 @@
         ]
       },
       {
+        "source": "/tonio/rigging/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Tonio Loewald (exported from Cheetah3D, 2026-10-16)"
+          },
+          {
+            "key": "license",
+            "value": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): free to use, share and adapt, with credit to Tonio Loewald"
+          },
+          {
+            "key": "Link",
+            "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"Tonio Loewald\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/noaa/earth/**",
         "headers": [
           {
