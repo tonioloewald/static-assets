@@ -266,6 +266,18 @@ not exist. A `--deploy` that would **change or remove** files outside the named
 target refuses and asks for `--force`, because that is the signature of an
 accidental mass invalidation. Removals are called out as `this URL stops resolving`.
 
+**The generated host config is exempt from that guard**, and this took a round of
+pointless `--force` to notice. `_headers` and `robots.txt` live in `public/`, so
+they are in the hashed tree, and `mirror.ts` rewrites them from the metadata on
+every run — meaning they change whenever a namespace is ADDED, the one case where
+nothing a consumer holds has moved at all. `publish <new pack> --deploy` therefore
+refused and demanded `--force`, which trains you to reach for `--force` during a
+routine, safe operation and so blunts the only guard that matters. They are now
+reported on their own line (`host config regenerated: _headers`) and never block,
+while still counting as something to deploy — shipping a `_headers`-only change is
+how the CORS fix reached the CDN. `firebase.json` is generated the same way but
+lands at the repo root, so it was never in the diff. (tosijs-3d's observation.)
+
 It compares against `.publish-state.json` — the hashes it recorded at its last
 successful deploy, written only on success and gitignored, since it describes what
 a machine pushed rather than what the repo says. Without that file the diff would

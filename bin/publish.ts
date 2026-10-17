@@ -27,6 +27,11 @@
  * OUTSIDE the named target refuses and asks for `--force`, because that is the
  * signature of an accidental mass invalidation rather than a targeted update.
  *
+ * The generated host config (`_headers`, `robots.txt`) is exempt from that
+ * guard: mirror rewrites it from the metadata on every run, so ADDING a
+ * namespace changes it without a single asset URL moving. Blocking on that
+ * taught you to pass `--force` for the safest operation there is.
+ *
  * Cloudflare Pages has no partial deploy — a deployment is a whole-tree
  * snapshot, and an upload of "just one file" would delete the rest of the site.
  * That is fine: Pages skips files whose content it already holds, so a targeted
@@ -118,19 +123,45 @@ if ((await run(['bun', 'bin/mirror.ts'])) !== 0) process.exit(1)
 
 const after = snapshot()
 
+/*
+Generated host config, not content.
+
+`mirror.ts` rewrites these from the metadata on EVERY run, so they change
+whenever a namespace is ADDED — precisely the case where nothing a consumer
+holds has moved at all. Counting them as changed URLs made
+`publish <new pack> --deploy` refuse and demand `--force`, which trains you to
+reach for `--force` during a routine, safe operation and so blunts the one
+guard that matters. They are reported on their own line and never block.
+
+They still count as something to deploy, though: shipping a `_headers`-only
+change is exactly how the CORS fix (#3269) reached the CDN.
+
+`firebase.json` is generated the same way, but it lands at the repo root rather
+than in `public/`, so it was never part of this diff.
+*/
+const CONFIG = new Set(['_headers', 'robots.txt'])
+const assets = (paths: string[]): string[] => paths.filter((p) => !CONFIG.has(p))
+
 const added = [...after.keys()].filter((p) => !before.has(p)).sort()
 const removed = [...before.keys()].filter((p) => !after.has(p)).sort()
 const changed = [...after.keys()]
   .filter((p) => before.has(p) && before.get(p) !== after.get(p))
   .sort()
 const unchanged = after.size - added.length - changed.length
+const touched = [...added, ...changed, ...removed]
+const config = touched.filter((p) => CONFIG.has(p)).sort()
 
 console.log('\nchanges to the deployable tree:')
-for (const p of added) console.log(`  + ${p}  ${mb(p)}`)
-for (const p of changed) console.log(`  ~ ${p}  ${mb(p)}`)
-for (const p of removed) console.log(`  - ${p}   (this URL stops resolving)`)
-if (!added.length && !changed.length && !removed.length) {
+for (const p of assets(added)) console.log(`  + ${p}  ${mb(p)}`)
+for (const p of assets(changed)) console.log(`  ~ ${p}  ${mb(p)}`)
+for (const p of assets(removed)) console.log(`  - ${p}   (this URL stops resolving)`)
+if (!touched.length) {
   console.log('  (nothing — the tree is identical)')
+} else if (!assets(touched).length) {
+  console.log('  (no asset changed)')
+}
+if (config.length) {
+  console.log(`  host config regenerated: ${config.join(', ')} — no asset URL moves`)
 }
 console.log(
   `  ${unchanged} file(s) unchanged — their URLs keep serving the same bytes, ` +
@@ -152,7 +183,7 @@ const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 // invalidate a cache or break a link — nobody holds it yet — so additions
 // outside the target are reported but never block.
 const outside = target
-  ? [...changed, ...removed].filter((p) => !squash(p).includes(squash(target)))
+  ? assets([...changed, ...removed]).filter((p) => !squash(p).includes(squash(target)))
   : []
 if (outside.length) {
   console.log(
