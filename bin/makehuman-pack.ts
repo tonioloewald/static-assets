@@ -29,6 +29,9 @@
  * - The mesh is RIGHT-HANDED, as OBJ is. tosijs-3d's rig-build mirrors it the
  *   way the glTF loader does.
  * - No UVs yet: step 0 draws a grey body. They come with the skin (step 5).
+ * - SKIN WEIGHTS are MakeHuman's own, hand-tuned for its 163-bone rig, stored
+ *   per bone (uint32 vertices, then uint16 weights / 65535). tosijs-3d folds
+ *   them onto UAL's skeleton.
  *
  *   bun bin/makehuman-pack.ts           fetch what is missing, build the pack
  *   bun bin/makehuman-pack.ts --force   refetch nothing, rebuild everything
@@ -109,6 +112,15 @@ const skel = JSON.parse(await source('rigs/default.mhskel')) as {
   joints: Record<string, number[]>
 }
 
+// ---- MakeHuman's skin weights, for its own 163-bone rig -------------------
+//
+// Stored as they are (one list per bone), so the fold onto another skeleton
+// (tosijs-3d's human-rig) is policy kept with that skeleton's joint table.
+
+const mhw = JSON.parse(await source('rigs/default_weights.mhw')) as {
+  weights: Record<string, [number, number][]>
+}
+
 // ---- the macro targets ------------------------------------------------------
 
 const macroFiles = [
@@ -180,6 +192,25 @@ const manifest = {
   body: { triangles: blob(bytesOf(new Uint32Array(body))), count: body.length / 3 },
   helpers: [...groups.keys()].filter((g) => g.startsWith('helper-')),
   joints: skel.joints,
+  weights: (() => {
+    // Per bone, its vertices then (after every bone's) the weights, uint16.
+    const bones = Object.keys(mhw.weights)
+    const counts = bones.map((b) => mhw.weights[b].length)
+    const total = counts.reduce((a, b) => a + b, 0)
+    const idx = new Uint32Array(total)
+    const w = new Uint16Array(total)
+    let k = 0
+    for (const b of bones) {
+      for (const [v, x] of mhw.weights[b]) {
+        idx[k] = v
+        w[k++] = Math.round(Math.min(1, x) * 65535)
+      }
+    }
+    const bytes = new Uint8Array(idx.byteLength + w.byteLength)
+    bytes.set(bytesOf(idx), 0)
+    bytes.set(bytesOf(w), idx.byteLength)
+    return { bones, counts, file: blob(bytes) }
+  })(),
   bones: Object.fromEntries(
     Object.entries(skel.bones).map(([n, b]) => [n, { parent: b.parent, head: b.head, tail: b.tail }])
   ),
