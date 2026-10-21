@@ -1,0 +1,5 @@
+{
+  "credit": "Tonio Loewald",
+  "note": "omnidude, rigged: tosijs-3d's stock character (a Mixamo skeleton, 41 animation clips). About 0.88 m tall, half human scale, so tosijs-3d scales him up where scale matters. The unrigged source mesh is tonio/rigging/omnidude.obj. Licensed by the parent folder (CC BY 4.0).",
+  "publish": ["omnidude.glb"]
+}
