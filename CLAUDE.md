@@ -83,6 +83,7 @@ publish is driven by `metadata.json` — you rarely touch anything else.
 | `bin/subset-glb.ts` | glTF surgery: drop animations from a glb (no Blender). Library + CLI. |
 | `bin/publish.ts` | Targeted rebuild + a diff of what would change on the CDN, then deploy. |
 | `bin/nasa-maps.ts` | Fetches planetary colour/elevation maps (NASA + NOAA) and cuts them to 1k/2k/4k. |
+| `bin/makehuman-pack.ts` | Converts MakeHuman's CC0 hm08 base mesh, skeleton and macro targets (pinned commit) into a human pack for tosijs-3d's character creator: metres, int16 targets dense or sparse, content-hashed binaries. |
 | `bin/geotiff-f32.ts` | Reads tiled float32 Deflate GeoTIFFs, which ffmpeg cannot. Library + CLI. |
 | `bin/library-glb.ts` | glTF surgery: merge a pack of models into one glb, and cut subsets of it. Library + CLI. |
 | `CONTENT-MAP.md` | Living map of the *content* + how it snaps together. |

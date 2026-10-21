@@ -1,0 +1,10 @@
+{
+  "credit": "MakeHuman (makehumancommunity.org)",
+  "license": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved",
+  "link": "http://www.makehumancommunity.org",
+  "note": "MakeHuman's bundled assets (base mesh, skeleton, targets), CC0 since 2020, converted into HUMAN PACKS for tosijs-3d's character creator (CHARACTER-DESIGN.md) by bin/makehuman-pack.ts from a pinned commit of github.com/makehumancommunity/makehuman. Their code is AGPL and none of it is used. The originals land in source/, which no publish glob names. A pack is a manifest (hm08/hm08.json) plus binaries named by their content hash, so those can be cached forever; the manifest is the one file that changes.",
+  "publish": [
+    "hm08/*.json",
+    "hm08/*.bin"
+  ]
+}
