@@ -29,6 +29,8 @@
  * - The mesh is RIGHT-HANDED, as OBJ is. tosijs-3d's rig-build mirrors it the
  *   way the glTF loader does.
  * - No UVs yet: step 0 draws a grey body. They come with the skin (step 5).
+ * - REGIONS are per-vertex masks, uint8 (lips: what the lip volume targets
+ *   move), for tinting without UVs.
  * - SKIN WEIGHTS are MakeHuman's own, hand-tuned for its 163-bone rig, stored
  *   per bone (uint32 vertices, then uint16 weights / 65535). tosijs-3d folds
  *   them onto UAL's skeleton.
@@ -121,6 +123,34 @@ const mhw = JSON.parse(await source('rigs/default_weights.mhw')) as {
   weights: Record<string, [number, number][]>
 }
 
+// ---- regions: per-vertex masks (0..255) -----------------------------------
+//
+// LIPS are the vertices MakeHuman's lip VOLUME targets move, weighted by how
+// far: exactly the lips' flesh. (All 24 lip targets also move the border
+// skin, and painted that way the colour smears onto the chin and philtrum.)
+
+async function regionFrom(paths: string[]): Promise<Uint8Array> {
+  const out = new Float32Array(vertexCount)
+  for (const path of paths) {
+    for (const line of (await source(path)).split('\n')) {
+      if (line === '' || line.startsWith('#')) continue
+      const [i, x, y, z] = line.trim().split(/\s+/).map(Number)
+      out[i] = Math.max(out[i], Math.hypot(x, y, z))
+    }
+  }
+  let max = 0
+  for (const v of out) max = Math.max(max, v)
+  return Uint8Array.from(out, (v) => Math.round((v / max) * 255))
+}
+
+const regions = {
+  lips: await regionFrom(
+    ['upperlip-volume-incr', 'upperlip-volume-decr', 'lowerlip-volume-incr', 'lowerlip-volume-decr'].map(
+      (t) => `targets/mouth/mouth-${t}.target`
+    )
+  ),
+}
+
 // ---- the macro targets ------------------------------------------------------
 
 const macroFiles = [
@@ -192,6 +222,7 @@ const manifest = {
   body: { triangles: blob(bytesOf(new Uint32Array(body))), count: body.length / 3 },
   helpers: [...groups.keys()].filter((g) => g.startsWith('helper-')),
   joints: skel.joints,
+  regions: Object.fromEntries(Object.entries(regions).map(([n, r]) => [n, blob(r)])),
   weights: (() => {
     // Per bone, its vertices then (after every bone's) the weights, uint16.
     const bones = Object.keys(mhw.weights)
