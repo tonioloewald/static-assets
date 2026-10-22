@@ -262,9 +262,33 @@ function hasAlpha(file: string): boolean {
 type Proxy = Record<string, unknown>
 const proxies: Record<string, Proxy> = {}
 let proxyBytes = 0
+// More CC0 packs from the same site, unpacked beside the system assets.
+const EXTRA_PACKS: Record<string, string> = {
+  // Beards and moustaches, bound to hm08 like any garment.
+  bodyparts05: 'https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip',
+}
+for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
+  const dir = join(SRC, 'packs', pack)
+  if (existsSync(join(dir, 'clothes'))) continue
+  const zip = join(SRC, 'packs', `${pack}_cc0.zip`)
+  if (!existsSync(zip)) {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`${pack}: ${res.status}`)
+    writeFileSync(zip, new Uint8Array(await res.arrayBuffer()))
+  }
+  Bun.spawnSync(['unzip', '-q', '-o', zip, '-d', dir])
+}
+const sources: [string, string, string][] = []
 for (const category of ['clothes', 'hair', 'eyebrows']) {
   for (const name of readdirSync(join(SYSTEM, category)).sort()) {
-    const dir = join(SYSTEM, category, name)
+    sources.push([category, name, join(SYSTEM, category, name)])
+  }
+}
+for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
+  sources.push(['beard', name, join(SRC, 'packs/bodyparts05/clothes', name)])
+}
+{
+  for (const [category, name, dir] of sources) {
     const clo = readFileSync(join(dir, `${name}.mhclo`), 'utf8').split('\n')
     const head = new Map<string, string>()
     const rows: number[][] = []
