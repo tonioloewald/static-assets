@@ -319,9 +319,13 @@ for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
 // [category, name, folder, slot]
 const sources: [string, string, string, string][] = []
 const systemSlot = (category: string, name: string) =>
-  category === 'hair' ? 'hair' : category === 'eyebrows' ? 'brows' : name.startsWith('shoes') ? 'shoes' : name.startsWith('fedora') ? 'hat' : 'outfit'
-for (const category of ['clothes', 'hair', 'eyebrows']) {
+  category === 'hair' ? 'hair' : category === 'eyebrows' ? 'brows' : category === 'teeth' ? 'teeth' : category === 'tongue' ? 'tongue' : name.startsWith('shoes') ? 'shoes' : name.startsWith('fedora') ? 'hat' : 'outfit'
+// Teeth and tongue: always worn, bound to the mouth's helpers (which the
+// jaw and tongue expressions move). Only the base teeth; the shapes are
+// alternatives nobody has asked for yet.
+for (const category of ['clothes', 'hair', 'eyebrows', 'teeth', 'tongue']) {
   for (const name of readdirSync(join(SYSTEM, category)).sort()) {
+    if (category === 'teeth' && name !== 'teeth_base') continue
     sources.push([category, name, join(SYSTEM, category, name), systemSlot(category, name)])
   }
 }
