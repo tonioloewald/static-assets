@@ -423,7 +423,10 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
       if (f == null || !existsSync(join(dir, f))) return undefined
       // PNG only where the material is transparent AND the image has alpha:
       // most clothes carry an unused alpha channel.
-      const keepAlpha = alpha && mat.get('transparent') === 'True' && hasAlpha(join(dir, f))
+      // Hair, brows and beards are cards: their alpha IS the hair, whatever
+      // the material says.
+      const keepAlpha =
+        alpha && (mat.get('transparent') === 'True' || category !== 'clothes') && hasAlpha(join(dir, f))
       const r = resized(join(dir, f), keepAlpha)
       proxyBytes += r.bytes.length
       return imageBlob(r.bytes, r.ext)
