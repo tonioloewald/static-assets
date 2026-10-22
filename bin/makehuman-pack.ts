@@ -31,9 +31,9 @@
  * - No UVs yet: step 0 draws a grey body. They come with the skin (step 5).
  * - REGIONS are per-vertex masks, uint8 (lips: what the lip volume targets
  *   move), for tinting without UVs.
- * - SKIN WEIGHTS are MakeHuman's own, hand-tuned for its 163-bone rig, stored
- *   per bone (uint32 vertices, then uint16 weights / 65535). tosijs-3d folds
- *   them onto UAL's skeleton.
+ * - PARTS are extra geometry on the body's own vertices (eyes, eyelashes), so
+ *   every target moves them with the body.
+ * - No skin weights: tosijs-3d binds UAL's skeleton by bone heat.
  *
  *   bun bin/makehuman-pack.ts           fetch what is missing, build the pack
  *   bun bin/makehuman-pack.ts --force   refetch nothing, rebuild everything
@@ -114,15 +114,6 @@ const skel = JSON.parse(await source('rigs/default.mhskel')) as {
   joints: Record<string, number[]>
 }
 
-// ---- MakeHuman's skin weights, for its own 163-bone rig -------------------
-//
-// Stored as they are (one list per bone), so the fold onto another skeleton
-// (tosijs-3d's human-rig) is policy kept with that skeleton's joint table.
-
-const mhw = JSON.parse(await source('rigs/default_weights.mhw')) as {
-  weights: Record<string, [number, number][]>
-}
-
 // ---- regions: per-vertex masks (0..255) -----------------------------------
 //
 // LIPS are the vertices MakeHuman's lip VOLUME targets move, weighted by how
@@ -150,6 +141,71 @@ const regions = {
     )
   ),
 }
+
+// ---- parts: eyes and eyelashes ---------------------------------------------
+//
+// A PART is extra geometry on the body's own vertices: `vertices` lists the
+// pack vertices it uses (so the targets move it too), `triangles` index that
+// list, and `uvs` (two floats per part vertex) map a texture when it has one.
+//
+// EYES are MakeHuman's low-poly eye proxy. It is bound rigidly (`verts 0`):
+// every proxy vertex IS one of the base mesh's helper eye vertices, so it is
+// just faces and UVs over vertices the pack already has. Its UVs are per face
+// corner, so a vertex with two UVs becomes two part vertices.
+// EYELASHES are the base mesh's helper eyelash cards, untextured.
+
+async function eyesPart() {
+  const clo = await source('eyes/low-poly/low-poly.mhclo')
+  const lines = clo.split('\n')
+  const at = lines.findIndex((l) => l.startsWith('verts'))
+  if (!/^verts 0\b/.test(lines[at])) throw new Error('eyes: expected a rigid (verts 0) proxy')
+  const map = lines.slice(at + 1).map((l) => l.trim()).filter((l) => /^\d+$/.test(l)).map(Number)
+  const eo = await source('eyes/low-poly/low-poly.obj')
+  const vt: number[][] = []
+  const corners = new Map<string, number>()
+  const vertices: number[] = []
+  const uvs: number[] = []
+  const triangles: number[] = []
+  for (const line of eo.split('\n')) {
+    if (line.startsWith('vt ')) vt.push(line.slice(3).trim().split(/\s+/).map(Number))
+    else if (line.startsWith('f ')) {
+      const c = line.slice(2).trim().split(/\s+/).map((t) => {
+        let k = corners.get(t)
+        if (k == null) {
+          const [v, u] = t.split('/').map((n) => parseInt(n, 10) - 1)
+          k = vertices.length
+          corners.set(t, k)
+          vertices.push(map[v])
+          uvs.push(vt[u][0], vt[u][1])
+        }
+        return k
+      })
+      for (let i = 1; i + 1 < c.length; i++) triangles.push(c[0], c[i], c[i + 1])
+    }
+  }
+  return { vertices, uvs, triangles }
+}
+
+function helperPart(names: string[]) {
+  const remap = new Map<number, number>()
+  const vertices: number[] = []
+  const triangles: number[] = []
+  for (const n of names) {
+    for (const v of groups.get(n) ?? []) {
+      let k = remap.get(v)
+      if (k == null) {
+        k = vertices.length
+        remap.set(v, k)
+        vertices.push(v)
+      }
+      triangles.push(k)
+    }
+  }
+  return { vertices, triangles }
+}
+
+const eyes = await eyesPart()
+const eyelashes = helperPart(['l', 'r'].flatMap((s) => [1, 2].map((n) => `helper-${s}-eyelashes-${n}`)))
 
 // ---- the macro targets ------------------------------------------------------
 
@@ -223,25 +279,19 @@ const manifest = {
   helpers: [...groups.keys()].filter((g) => g.startsWith('helper-')),
   joints: skel.joints,
   regions: Object.fromEntries(Object.entries(regions).map(([n, r]) => [n, blob(r)])),
-  weights: (() => {
-    // Per bone, its vertices then (after every bone's) the weights, uint16.
-    const bones = Object.keys(mhw.weights)
-    const counts = bones.map((b) => mhw.weights[b].length)
-    const total = counts.reduce((a, b) => a + b, 0)
-    const idx = new Uint32Array(total)
-    const w = new Uint16Array(total)
-    let k = 0
-    for (const b of bones) {
-      for (const [v, x] of mhw.weights[b]) {
-        idx[k] = v
-        w[k++] = Math.round(Math.min(1, x) * 65535)
-      }
-    }
-    const bytes = new Uint8Array(idx.byteLength + w.byteLength)
-    bytes.set(bytesOf(idx), 0)
-    bytes.set(bytesOf(w), idx.byteLength)
-    return { bones, counts, file: blob(bytes) }
-  })(),
+  parts: Object.fromEntries(
+    Object.entries({ eyes, eyelashes } as Record<string, { vertices: number[]; triangles: number[]; uvs?: number[] }>).map(
+      ([n, p]) => [
+        n,
+        {
+          count: p.vertices.length,
+          vertices: blob(bytesOf(new Uint32Array(p.vertices))),
+          triangles: blob(bytesOf(new Uint32Array(p.triangles))),
+          ...(p.uvs ? { uvs: blob(bytesOf(new Float32Array(p.uvs))) } : {}),
+        },
+      ]
+    )
+  ),
   bones: Object.fromEntries(
     Object.entries(skel.bones).map(([n, b]) => [n, { parent: b.parent, head: b.head, tail: b.tail }])
   ),

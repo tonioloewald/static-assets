@@ -52,6 +52,27 @@
         ]
       },
       {
+        "source": "/makehuman/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "MakeHuman (makehumancommunity.org)"
+          },
+          {
+            "key": "license",
+            "value": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved"
+          },
+          {
+            "key": "Link",
+            "value": "<http://www.makehumancommunity.org>; rel=\"author\"; title=\"MakeHuman (makehumancommunity.org)\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/tosijs-3d/**",
         "headers": [
           {
