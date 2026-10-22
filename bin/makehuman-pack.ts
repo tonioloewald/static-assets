@@ -263,12 +263,35 @@ type Proxy = Record<string, unknown>
 const proxies: Record<string, Proxy> = {}
 let proxyBytes = 0
 // More CC0 packs from the same site, unpacked beside the system assets.
+const PACK_URL = (p: string) =>
+  `https://files.makehumancommunity.org/asset_packs/${p}/${p}_cc0.zip`
 const EXTRA_PACKS: Record<string, string> = {
   // Beards and moustaches, bound to hm08 like any garment.
-  bodyparts05: 'https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip',
+  bodyparts05: PACK_URL('bodyparts05'),
   // Alternate textures (colourways) for the system clothes.
-  clothes_materials01:
-    'https://files.makehumancommunity.org/asset_packs/system_clothes_materials01/system_clothes_materials01_cc0.zip',
+  clothes_materials01: PACK_URL('system_clothes_materials01'),
+  // Separate garments and accessories, each in a SLOT.
+  shirts01: PACK_URL('shirts01'),
+  pants01: PACK_URL('pants01'),
+  skirts01: PACK_URL('skirts01'),
+  suits01: PACK_URL('suits01'),
+  shoes01: PACK_URL('shoes01'),
+  hats01: PACK_URL('hats01'),
+  glasses01: PACK_URL('glasses01'),
+  gloves01: PACK_URL('gloves01'),
+}
+const EXCLUDED = new Set(['toigo_maga_hat'])
+/** The slot each pack's garments fill: one of each slot is worn at a time. */
+const PACK_SLOT: Record<string, string> = {
+  bodyparts05: 'beard',
+  shirts01: 'top',
+  pants01: 'bottom',
+  skirts01: 'bottom',
+  suits01: 'outfit',
+  shoes01: 'shoes',
+  hats01: 'hat',
+  glasses01: 'glasses',
+  gloves01: 'gloves',
 }
 for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
   const dir = join(SRC, 'packs', pack)
@@ -281,18 +304,30 @@ for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
   }
   Bun.spawnSync(['unzip', '-q', '-o', zip, '-d', dir])
 }
-const sources: [string, string, string][] = []
+// [category, name, folder, slot]
+const sources: [string, string, string, string][] = []
+const systemSlot = (category: string, name: string) =>
+  category === 'hair' ? 'hair' : category === 'eyebrows' ? 'brows' : name.startsWith('shoes') ? 'shoes' : name.startsWith('fedora') ? 'hat' : 'outfit'
 for (const category of ['clothes', 'hair', 'eyebrows']) {
   for (const name of readdirSync(join(SYSTEM, category)).sort()) {
-    sources.push([category, name, join(SYSTEM, category, name)])
+    sources.push([category, name, join(SYSTEM, category, name), systemSlot(category, name)])
   }
 }
-for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
-  sources.push(['beard', name, join(SRC, 'packs/bodyparts05/clothes', name)])
+for (const [pack, slot] of Object.entries(PACK_SLOT)) {
+  const root = join(SRC, 'packs', pack, 'clothes')
+  for (const name of existsSync(root) ? readdirSync(root).sort() : []) {
+    if (!existsSync(join(root, name)) || !readdirSync(join(root, name)).some((f) => f.endsWith('.mhclo'))) continue
+    // Curated out: political merchandise is not neutral content for a library.
+    if (EXCLUDED.has(name)) continue
+    sources.push([slot === 'beard' ? 'beard' : 'clothes', name, join(root, name), slot])
+  }
 }
 {
-  for (const [category, name, dir] of sources) {
-    const clo = readFileSync(join(dir, `${name}.mhclo`), 'utf8').split('\n')
+  for (const [category, name, dir, slot] of sources) {
+    const cloFile = existsSync(join(dir, `${name}.mhclo`))
+      ? `${name}.mhclo`
+      : readdirSync(dir).find((f) => f.endsWith('.mhclo'))!
+    const clo = readFileSync(join(dir, cloFile), 'utf8').split('\n')
     const head = new Map<string, string>()
     const rows: number[][] = []
     const deleted: number[] = []
@@ -338,7 +373,7 @@ for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
     bind.set(bytesOf(w), idx.byteLength)
     bind.set(bytesOf(d), idx.byteLength + w.byteLength)
     // The mesh: corners split by UV.
-    const obj = readFileSync(join(dir, head.get('obj_file') ?? `${name}.obj`), 'utf8')
+    const obj = readFileSync(join(dir, head.get('obj_file') ?? cloFile.replace(/\.mhclo$/, '.obj')), 'utf8')
     const vt: number[][] = []
     let objVerts = 0
     const corners = new Map<string, number>()
@@ -371,7 +406,8 @@ for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
     }
     // The material: its textures, resized.
     const mat = new Map<string, string>()
-    for (const line of readFileSync(join(dir, head.get('material') ?? `${name}.mhmat`), 'utf8').split('\n')) {
+    const matFile = [head.get('material'), cloFile.replace(/\.mhclo$/, '.mhmat')].find((f) => f && existsSync(join(dir, f)))
+    for (const line of (matFile ? readFileSync(join(dir, matFile), 'utf8') : '').split('\n')) {
       const m = line.trim().match(/^(\w+)\s+(.*)$/)
       if (m) mat.set(m[1], m[2])
     }
@@ -389,6 +425,7 @@ for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
     const normal = texture('normalmapTexture', false)
     proxies[name] = {
       category,
+      slot,
       rows: n,
       count: source.length,
       binding: blob(bind),
