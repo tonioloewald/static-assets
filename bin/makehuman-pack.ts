@@ -266,6 +266,9 @@ let proxyBytes = 0
 const EXTRA_PACKS: Record<string, string> = {
   // Beards and moustaches, bound to hm08 like any garment.
   bodyparts05: 'https://files2.makehumancommunity.org/asset_packs/bodyparts05/bodyparts05_cc0.zip',
+  // Alternate textures (colourways) for the system clothes.
+  clothes_materials01:
+    'https://files.makehumancommunity.org/asset_packs/system_clothes_materials01/system_clothes_materials01_cc0.zip',
 }
 for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
   const dir = join(SRC, 'packs', pack)
@@ -402,6 +405,42 @@ for (const name of readdirSync(join(SRC, 'packs/bodyparts05/clothes')).sort()) {
       },
     }
     proxyBytes += bind.length + (tris.length + uvs.length + source.length + deleted.length) * 4
+  }
+}
+
+// ---- looks: alternate textures for a proxy (its colourways) ----------------
+{
+  const root = join(SRC, 'packs/clothes_materials01/clothes')
+  for (const proxy of existsSync(root) ? readdirSync(root).sort() : []) {
+    const entry = proxies[proxy] as { material: Record<string, unknown> } | undefined
+    if (entry == null) continue
+    const looks: Record<string, { diffuse: string; normal?: string }> = {}
+    for (const look of readdirSync(join(root, proxy)).sort()) {
+      const dir = join(root, proxy, look)
+      const matFile = readdirSync(dir).find((f) => f.endsWith('.mhmat'))
+      if (matFile == null) continue
+      const mat = new Map<string, string>()
+      for (const line of readFileSync(join(dir, matFile), 'utf8').split('\n')) {
+        const m = line.trim().match(/^(\w+)\s+(.*)$/)
+        if (m) mat.set(m[1], m[2])
+      }
+      const file = (key: string) => {
+        const f = mat.get(key)
+        if (f == null) return undefined
+        const path = [join(dir, f), join(dir, f.split('/').pop()!)].find((p) => existsSync(p))
+        if (path == null) return undefined
+        const r = resized(path, false)
+        proxyBytes += r.bytes.length
+        return imageBlob(r.bytes, r.ext)
+      }
+      const diffuse = file('diffuseTexture')
+      if (diffuse == null) continue
+      const normal = file('normalmapTexture')
+      // `toigo_male_elegant_suit_teal` → `teal`: the garment's own name is noise here.
+      const name = look.replace(/^toigo_male_(elegant|casual)_suit(_\d+)?_/, '').replace(/_/g, ' ')
+      looks[name] = { diffuse, ...(normal ? { normal } : {}) }
+    }
+    if (Object.keys(looks).length) entry.material.looks = looks
   }
 }
 
