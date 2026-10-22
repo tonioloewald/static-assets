@@ -41,6 +41,7 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -78,6 +79,13 @@ async function source(path: string): Promise<string> {
 /** Write bytes under their own hash; return the file name. */
 function blob(bytes: Uint8Array): string {
   const name = createHash('sha256').update(bytes).digest('hex').slice(0, 16) + '.bin'
+  writeFileSync(join(OUT, name), bytes)
+  return name
+}
+
+/** Write an image under its own hash, keeping its extension (browsers sniff, Babylon picks a loader by it). */
+function imageBlob(bytes: Uint8Array, ext: string): string {
+  const name = createHash('sha256').update(bytes).digest('hex').slice(0, 16) + '.' + ext
   writeFileSync(join(OUT, name), bytes)
   return name
 }
@@ -207,6 +215,172 @@ function helperPart(names: string[]) {
 const eyes = await eyesPart()
 const eyelashes = helperPart(['l', 'r'].flatMap((s) => [1, 2].map((n) => `helper-${s}-eyelashes-${n}`)))
 
+if (existsSync(OUT)) rmSync(OUT, { recursive: true })
+mkdirSync(OUT, { recursive: true })
+
+// ---- proxies: MakeHuman's CC0 system assets ---------------------------------
+//
+// Clothes, hair and eyebrows made for hm08, each bound to it by a `.mhclo`:
+// per proxy vertex, three base vertices, barycentric weights and an offset
+// (decimetres) scaled per axis by how far apart two reference vertices are on
+// the body being fitted. Fitting is tosijs-3d's `proxy-fit`. The pack is
+// MakeHuman's "system assets", CC0, from their asset-pack site (the old
+// makehuman-assets repo is gone).
+//
+// Each proxy keeps its binding per OBJ vertex, and its drawn vertices are the
+// OBJ's corners split by UV (`source` maps one to the other). Textures are
+// resized to 1024 (macOS `sips`): JPEG, or PNG where they carry alpha (hair).
+
+const SYSTEM_URL =
+  'https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip'
+const SYSTEM = join(SRC, 'packs/system')
+if (!existsSync(join(SYSTEM, 'clothes'))) {
+  const zip = join(SRC, 'packs/makehuman_system_assets_cc0.zip')
+  mkdirSync(dirname(zip), { recursive: true })
+  if (!existsSync(zip)) {
+    const res = await fetch(SYSTEM_URL)
+    if (!res.ok) throw new Error(`system assets: ${res.status}`)
+    writeFileSync(zip, new Uint8Array(await res.arrayBuffer()))
+  }
+  Bun.spawnSync(['unzip', '-q', '-o', zip, '-d', SYSTEM])
+}
+
+function resized(file: string, alpha: boolean): { bytes: Uint8Array; ext: string } {
+  const ext = alpha ? 'png' : 'jpg'
+  const out = join(tmpdir(), `mhpack-${createHash('sha1').update(file).digest('hex')}.${ext}`)
+  const args = ['sips', '-Z', '1024', ...(alpha ? [] : ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82']), file, '--out', out]
+  const r = Bun.spawnSync(args)
+  if (r.exitCode !== 0) throw new Error(`sips failed on ${file}`)
+  return { bytes: new Uint8Array(readFileSync(out)), ext }
+}
+
+function hasAlpha(file: string): boolean {
+  const r = Bun.spawnSync(['sips', '-g', 'hasAlpha', file])
+  return /hasAlpha: yes/.test(new TextDecoder().decode(r.stdout))
+}
+
+type Proxy = Record<string, unknown>
+const proxies: Record<string, Proxy> = {}
+let proxyBytes = 0
+for (const category of ['clothes', 'hair', 'eyebrows']) {
+  for (const name of readdirSync(join(SYSTEM, category)).sort()) {
+    const dir = join(SYSTEM, category, name)
+    const clo = readFileSync(join(dir, `${name}.mhclo`), 'utf8').split('\n')
+    const head = new Map<string, string>()
+    const rows: number[][] = []
+    const deleted: number[] = []
+    let section = ''
+    for (const raw of clo) {
+      const line = raw.trim()
+      if (line === '' || line.startsWith('#')) continue
+      if (/^verts\b/.test(line)) { section = 'verts'; continue }
+      if (/^delete_verts\b/.test(line)) { section = 'delete'; continue }
+      if (section === 'verts' && /^[\d.\-\s]+$/.test(line)) {
+        rows.push(line.split(/\s+/).map(Number))
+      } else if (section === 'delete' && /^[\d\s-]+$/.test(line)) {
+        const t = line.split(/\s+/)
+        for (let i = 0; i < t.length; i++) {
+          if (t[i + 1] === '-') {
+            for (let v = Number(t[i]); v <= Number(t[i + 2]); v++) deleted.push(v)
+            i += 2
+          } else deleted.push(Number(t[i]))
+        }
+      } else {
+        // A header line (some files put `material` after `verts 0`).
+        const [k, ...rest] = line.split(/\s+/)
+        if (!head.has(k)) head.set(k, rest.join(' '))
+      }
+    }
+    // Binding per OBJ vertex: three base vertices, weights, offset (metres).
+    const n = rows.length
+    const idx = new Uint32Array(n * 3)
+    const w = new Float32Array(n * 3)
+    const d = new Float32Array(n * 3)
+    rows.forEach((r, i) => {
+      if (r.length === 1) {
+        idx.set([r[0], r[0], r[0]], i * 3)
+        w.set([1, 0, 0], i * 3)
+      } else {
+        idx.set(r.slice(0, 3), i * 3)
+        w.set(r.slice(3, 6), i * 3)
+        d.set(r.slice(6, 9).map((x) => x * SCALE), i * 3)
+      }
+    })
+    const bind = new Uint8Array(idx.byteLength + w.byteLength + d.byteLength)
+    bind.set(bytesOf(idx), 0)
+    bind.set(bytesOf(w), idx.byteLength)
+    bind.set(bytesOf(d), idx.byteLength + w.byteLength)
+    // The mesh: corners split by UV.
+    const obj = readFileSync(join(dir, head.get('obj_file') ?? `${name}.obj`), 'utf8')
+    const vt: number[][] = []
+    let objVerts = 0
+    const corners = new Map<string, number>()
+    const source: number[] = []
+    const uvs: number[] = []
+    const tris: number[] = []
+    for (const line of obj.split('\n')) {
+      if (line.startsWith('v ')) objVerts++
+      else if (line.startsWith('vt ')) vt.push(line.slice(3).trim().split(/\s+/).map(Number))
+      else if (line.startsWith('f ')) {
+        const c = line.slice(2).trim().split(/\s+/).map((t) => {
+          let k = corners.get(t)
+          if (k == null) {
+            const [v, u] = t.split('/').map((x) => parseInt(x, 10) - 1)
+            k = source.length
+            corners.set(t, k)
+            source.push(v)
+            uvs.push(...(Number.isFinite(u) && vt[u] ? vt[u].slice(0, 2) : [0, 0]))
+          }
+          return k
+        })
+        for (let i = 1; i + 1 < c.length; i++) tris.push(c[0], c[i], c[i + 1])
+      }
+    }
+    if (objVerts !== n) throw new Error(`${name}: ${objVerts} OBJ vertices, ${n} bindings`)
+    const scale: Record<string, [number, number, number]> = {}
+    for (const axis of ['x', 'y', 'z']) {
+      const t = head.get(`${axis}_scale`)?.split(/\s+/).map(Number)
+      if (t) scale[axis] = [t[0], t[1], t[2] * SCALE]
+    }
+    // The material: its textures, resized.
+    const mat = new Map<string, string>()
+    for (const line of readFileSync(join(dir, head.get('material') ?? `${name}.mhmat`), 'utf8').split('\n')) {
+      const m = line.trim().match(/^(\w+)\s+(.*)$/)
+      if (m) mat.set(m[1], m[2])
+    }
+    const texture = (key: string, alpha: boolean) => {
+      const f = mat.get(key)
+      if (f == null || !existsSync(join(dir, f))) return undefined
+      // PNG only where the material is transparent AND the image has alpha:
+      // most clothes carry an unused alpha channel.
+      const keepAlpha = alpha && mat.get('transparent') === 'True' && hasAlpha(join(dir, f))
+      const r = resized(join(dir, f), keepAlpha)
+      proxyBytes += r.bytes.length
+      return imageBlob(r.bytes, r.ext)
+    }
+    const diffuse = texture('diffuseTexture', true)
+    const normal = texture('normalmapTexture', false)
+    proxies[name] = {
+      category,
+      rows: n,
+      count: source.length,
+      binding: blob(bind),
+      source: blob(bytesOf(Uint32Array.from(source))),
+      triangles: blob(bytesOf(Uint32Array.from(tris))),
+      uvs: blob(bytesOf(Float32Array.from(uvs))),
+      ...(deleted.length ? { delete: blob(bytesOf(Uint32Array.from(deleted))) } : {}),
+      scale,
+      material: {
+        ...(diffuse ? { diffuse } : {}),
+        ...(normal ? { normal } : {}),
+        alpha: diffuse?.endsWith('.png') ?? false,
+        twoSided: mat.get('backfaceCull') === 'False',
+      },
+    }
+    proxyBytes += bind.length + (tris.length + uvs.length + source.length + deleted.length) * 4
+  }
+}
+
 // ---- the macro targets ------------------------------------------------------
 
 const macroFiles = [
@@ -215,8 +389,6 @@ const macroFiles = [
   ...(await listDir('targets/macrodetails/proportions')),
 ].filter((p) => p.endsWith('.target'))
 
-if (existsSync(OUT)) rmSync(OUT, { recursive: true })
-mkdirSync(OUT, { recursive: true })
 
 type TargetEntry = { file: string; step: number; dense: boolean; count: number }
 const targets: Record<string, TargetEntry> = {}
@@ -292,6 +464,7 @@ const manifest = {
       ]
     )
   ),
+  proxies,
   bones: Object.fromEntries(
     Object.entries(skel.bones).map(([n, b]) => [n, { parent: b.parent, head: b.head, tail: b.tail }])
   ),
@@ -304,5 +477,6 @@ const total = readdirSync(OUT).reduce((s, f) => s + readFileSync(join(OUT, f)).l
 console.log(
   `hm08: ${vertexCount} vertices, ${body.length / 3} body triangles, ${Object.keys(skel.bones).length} bones\n` +
     `targets: ${macroFiles.length} (${dense} dense ${kb(denseBytes)}, ${macroFiles.length - dense} sparse ${kb(sparseBytes)})\n` +
+    `proxies: ${Object.keys(proxies).length} (${kb(proxyBytes)})\n` +
     `pack: ${kb(total)} in ${readdirSync(OUT).length} files → ${OUT}`
 )
