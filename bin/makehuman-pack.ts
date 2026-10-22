@@ -279,6 +279,10 @@ const EXTRA_PACKS: Record<string, string> = {
   hats01: PACK_URL('hats01'),
   glasses01: PACK_URL('glasses01'),
   gloves01: PACK_URL('gloves01'),
+  // Sci-fi and fantasy: armour, a cyborg suit, bodysuits, robes; helmets; masks.
+  suits02: PACK_URL('suits02'),
+  hats02: PACK_URL('hats02'),
+  masks01: PACK_URL('masks01'),
 }
 const EXCLUDED = new Set(['toigo_maga_hat'])
 /** The slot each pack's garments fill: one of each slot is worn at a time. */
@@ -292,6 +296,9 @@ const PACK_SLOT: Record<string, string> = {
   hats01: 'hat',
   glasses01: 'glasses',
   gloves01: 'gloves',
+  suits02: 'outfit',
+  hats02: 'hat',
+  masks01: 'mask',
 }
 for (const [pack, url] of Object.entries(EXTRA_PACKS)) {
   const dir = join(SRC, 'packs', pack)
