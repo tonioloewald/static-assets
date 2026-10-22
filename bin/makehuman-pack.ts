@@ -122,6 +122,11 @@ const skel = JSON.parse(await source('rigs/default.mhskel')) as {
   joints: Record<string, number[]>
 }
 
+// MakeHuman's skin weights for its own rig: used only to bake expressions.
+const mhw = JSON.parse(await source('rigs/default_weights.mhw')) as {
+  weights: Record<string, [number, number][]>
+}
+
 // ---- regions: per-vertex masks (0..255) -----------------------------------
 //
 // LIPS are the vertices MakeHuman's lip VOLUME targets move, weighted by how
@@ -491,6 +496,163 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
   }
 }
 
+// ---- expressions: MakeHuman's face pose units, baked to shape targets -------
+//
+// MakeHuman's CC0 face pose units (blink, jaw drop, kiss, mouth corners, brows,
+// cheeks...) are poses of its 163-bone face rig, one BVH frame each. Baked
+// here, offline, with its own skin weights (`default_weights.mhw`): pose the
+// rig, skin the base mesh, keep each unit's movement from the rest frame as a
+// sparse target (`expression/<Unit>`). At runtime they are morph targets on
+// the body, so a face is weights, and the body keeps UAL's skeleton.
+//
+// The BVH is Z-up: its (x, y, z) is the mesh's (x, z, -y). Joint frames are
+// axis-aligned at rest (BVH convention), so a joint's world rotation is its
+// parent's times its own (channels in the listed order, degrees).
+
+type Mat3 = number[]
+const mul3 = (a: Mat3, b: Mat3): Mat3 => {
+  const r = new Array(9).fill(0)
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) r[i * 3 + j] += a[i * 3 + k] * b[k * 3 + j]
+  return r
+}
+const rot = (axis: number, deg: number): Mat3 => {
+  const c = Math.cos((deg * Math.PI) / 180)
+  const s_ = Math.sin((deg * Math.PI) / 180)
+  if (axis === 0) return [1, 0, 0, 0, c, -s_, 0, s_, c]
+  if (axis === 1) return [c, 0, s_, 0, 1, 0, -s_, 0, c]
+  return [c, -s_, 0, s_, c, 0, 0, 0, 1]
+}
+// BVH axes to the mesh's: x→x, y→-z, z→y.
+const A: Mat3 = [1, 0, 0, 0, 0, 1, 0, -1, 0]
+const At: Mat3 = [1, 0, 0, 0, 0, -1, 0, 1, 0]
+const apply3 = (m: Mat3, v: number[]) => [0, 1, 2].map((i) => m[i * 3] * v[0] + m[i * 3 + 1] * v[1] + m[i * 3 + 2] * v[2])
+
+const POSE_RAW = `https://raw.githubusercontent.com/${REPO}/${COMMIT}/makehuman/data/poseunits`
+async function poseSource(name: string): Promise<string> {
+  const file = join(SRC, 'poseunits', name)
+  if (!existsSync(file)) {
+    const res = await fetch(`${POSE_RAW}/${name}`)
+    if (!res.ok) throw new Error(`fetch poseunits/${name}: ${res.status}`)
+    mkdirSync(dirname(file), { recursive: true })
+    writeFileSync(file, new Uint8Array(await res.arrayBuffer()))
+  }
+  return readFileSync(file, 'utf8')
+}
+const unitNames = (JSON.parse(await poseSource('face-poseunits.json')) as { framemapping: string[] }).framemapping
+const bvhTokens = (await poseSource('face-poseunits.bvh')).split(/\s+/).filter(Boolean)
+type BvhJoint = { name: string; parent: number; channels: string[] }
+const bvhJoints: BvhJoint[] = []
+{
+  let i = 0
+  const stack: number[] = []
+  while (bvhTokens[i] !== 'MOTION') {
+    const w = bvhTokens[i++]
+    if (w === 'ROOT' || w === 'JOINT') bvhJoints.push({ name: bvhTokens[i++], parent: stack.length ? stack[stack.length - 1] : -1, channels: [] })
+    else if (w === 'End') { i++; bvhJoints.push({ name: '', parent: stack[stack.length - 1], channels: [] }) }
+    else if (w === '{') stack.push(bvhJoints.length - 1)
+    else if (w === '}') stack.pop()
+    else if (w === 'OFFSET') i += 3
+    else if (w === 'CHANNELS') { const n = +bvhTokens[i++]; bvhJoints[bvhJoints.length - 1].channels = bvhTokens.slice(i, i + n); i += n }
+  }
+  var motionAt = i
+}
+const frameCount = +bvhTokens[motionAt + 2]
+const perFrame = bvhJoints.reduce((s_, j) => s_ + j.channels.length, 0)
+const frameStart = motionAt + 6
+const frame = (f: number) => bvhTokens.slice(frameStart + f * perFrame, frameStart + (f + 1) * perFrame).map(Number)
+
+// The rig's rest joints on the base mesh (decimetres, the OBJ's frame).
+const baseDm = positions.map((x) => x / SCALE)
+const cubeCentre = (joint: string) => {
+  const vs = skel.joints[joint]
+  const c = [0, 0, 0]
+  for (const v of vs) for (let k = 0; k < 3; k++) c[k] += baseDm[v * 3 + k] / vs.length
+  return c
+}
+const restHead = bvhJoints.map((j) => (j.name && skel.bones[j.name] ? cubeCentre(skel.bones[j.name].head) : null))
+
+// Skin weights: per vertex, (bone index into bvhJoints, weight), normalised.
+const boneIndex = new Map(bvhJoints.map((j, k) => [j.name, k]))
+const vw: [number, number][][] = Array.from({ length: vertexCount }, () => [])
+for (const [bone, list] of Object.entries(mhw.weights)) {
+  const k = boneIndex.get(bone)
+  if (k == null) continue
+  for (const [v, w] of list) vw[v].push([k, w])
+}
+for (const l of vw) {
+  const sum = l.reduce((s_, [, w]) => s_ + w, 0)
+  if (sum > 0) for (const e of l) e[1] /= sum
+}
+
+/** The base mesh skinned into frame `f` (decimetres). */
+function skinFrame(f: number): Float64Array {
+  const values = frame(f)
+  const G: Mat3[] = []
+  const P: number[][] = []
+  let c = 0
+  bvhJoints.forEach((j, k) => {
+    let local: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    for (const ch of j.channels) {
+      const v = values[c++]
+      const axis = ch[0] === 'X' ? 0 : ch[0] === 'Y' ? 1 : 2
+      if (ch.endsWith('rotation')) local = mul3(local, rot(axis, v))
+    }
+    // In the mesh's axes.
+    local = mul3(mul3(A, local), At)
+    const parentG = j.parent >= 0 ? G[j.parent] : [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    G[k] = mul3(parentG, local)
+    const rest = restHead[k]
+    if (rest == null) { P[k] = j.parent >= 0 ? P[j.parent] : [0, 0, 0]; return }
+    if (j.parent >= 0 && restHead[j.parent] != null) {
+      const pr = restHead[j.parent]!
+      const off = apply3(parentG, [rest[0] - pr[0], rest[1] - pr[1], rest[2] - pr[2]])
+      P[k] = [P[j.parent][0] + off[0], P[j.parent][1] + off[1], P[j.parent][2] + off[2]]
+    } else P[k] = rest
+  })
+  const out = new Float64Array(vertexCount * 3)
+  for (let v = 0; v < vertexCount; v++) {
+    const p = [baseDm[v * 3], baseDm[v * 3 + 1], baseDm[v * 3 + 2]]
+    if (vw[v].length === 0) { out.set(p, v * 3); continue }
+    for (const [k, w] of vw[v]) {
+      const rest = restHead[k] ?? [0, 0, 0]
+      const q = apply3(G[k], [p[0] - rest[0], p[1] - rest[1], p[2] - rest[2]])
+      out[v * 3] += w * (q[0] + P[k][0])
+      out[v * 3 + 1] += w * (q[1] + P[k][1])
+      out[v * 3 + 2] += w * (q[2] + P[k][2])
+    }
+  }
+  return out
+}
+
+const expressions: Record<string, { file: string; step: number; dense: boolean; count: number }> = {}
+{
+  const rest = skinFrame(0)
+  for (let f = 1; f < Math.min(frameCount, unitNames.length); f++) {
+    const posed = skinFrame(f)
+    const rows: [number, number, number, number][] = []
+    for (let v = 0; v < vertexCount; v++) {
+      const d = [0, 1, 2].map((k) => (posed[v * 3 + k] - rest[v * 3 + k]) * SCALE)
+      if (Math.hypot(d[0], d[1], d[2]) > 1e-5) rows.push([v, d[0], d[1], d[2]])
+    }
+    if (rows.length === 0) continue
+    let max = 0
+    for (const r of rows) max = Math.max(max, Math.abs(r[1]), Math.abs(r[2]), Math.abs(r[3]))
+    const step = max / 32767
+    const idx = new Uint32Array(rows.length)
+    const d = new Int16Array(rows.length * 3)
+    rows.forEach(([v, x, y, z], k) => {
+      idx[k] = v
+      d[k * 3] = Math.round(x / step)
+      d[k * 3 + 1] = Math.round(y / step)
+      d[k * 3 + 2] = Math.round(z / step)
+    })
+    const bytes = new Uint8Array(idx.byteLength + d.byteLength)
+    bytes.set(bytesOf(idx), 0)
+    bytes.set(bytesOf(d), idx.byteLength)
+    expressions[`expression/${unitNames[f]}`] = { file: blob(bytes), step, dense: false, count: rows.length }
+  }
+}
+
 // ---- the macro targets ------------------------------------------------------
 
 const macroFiles = [
@@ -578,7 +740,7 @@ const manifest = {
   bones: Object.fromEntries(
     Object.entries(skel.bones).map(([n, b]) => [n, { parent: b.parent, head: b.head, tail: b.tail }])
   ),
-  targets,
+  targets: { ...targets, ...expressions },
 }
 writeFileSync(join(OUT, 'hm08.json'), JSON.stringify(manifest))
 
