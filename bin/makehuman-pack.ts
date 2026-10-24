@@ -264,6 +264,54 @@ function hasAlpha(file: string): boolean {
   return /hasAlpha: yes/.test(new TextDecoder().decode(r.stdout))
 }
 
+/*
+WHAT A GARMENT IS, from where it sits on the body, not from the pack it came
+in: the packs file a monk's hood and viking boots under "suits". The binding
+places each vertex on the base body, so its extent is known before any body is
+made. Heights are fractions of the body's (feet 0, crown 1).
+- bodysuits and skinsuits: a base layer; ARMOUR: an overlay, worn over anything
+- glasses and masks keep the slot their pack gave them (they sit on the face)
+- feet only: shoes; hands only (wide, arm height): gloves; above the neck: hat
+- upper body only: top; lower body only: bottom; both: outfit
+*/
+let bodyLow = Infinity
+let bodyHigh = -Infinity
+for (const v of body) {
+  bodyLow = Math.min(bodyLow, positions[v * 3 + 1])
+  bodyHigh = Math.max(bodyHigh, positions[v * 3 + 1])
+}
+function clothesSlot(name: string, slot: string, rows: number[][]): string {
+  if (slot === 'glasses' || slot === 'mask') return slot
+  if (/armou?r/i.test(name)) return 'armour'
+  if (/bodysuit|skinsuit/i.test(name)) return 'bodysuit'
+  let lo = Infinity
+  let hi = -Infinity
+  let wide = 0
+  for (const r of rows) {
+    const y =
+      r.length === 1
+        ? positions[r[0] * 3 + 1]
+        : r[3] * positions[r[0] * 3 + 1] + r[4] * positions[r[1] * 3 + 1] + r[5] * positions[r[2] * 3 + 1] + r[7] * SCALE
+    const x =
+      r.length === 1
+        ? positions[r[0] * 3]
+        : r[3] * positions[r[0] * 3] + r[4] * positions[r[1] * 3] + r[5] * positions[r[2] * 3] + r[6] * SCALE
+    lo = Math.min(lo, y)
+    hi = Math.max(hi, y)
+    wide = Math.max(wide, Math.abs(x))
+  }
+  const H = bodyHigh - bodyLow
+  const a = (lo - bodyLow) / H
+  const b = (hi - bodyLow) / H
+  if (a > 0.7) return 'hat'
+  if (b < 0.5 && a < 0.05) return 'shoes'
+  if (a > 0.5 && b < 0.82 && wide > 0.4 * (H / 1.7)) return 'gloves'
+  // Ends below the waist: a bottom (shorts and miniskirts start high).
+  if (b < 0.66) return 'bottom'
+  if (a > 0.35) return 'top'
+  return 'outfit'
+}
+
 type Proxy = Record<string, unknown>
 const proxies: Record<string, Proxy> = {}
 let proxyBytes = 0
@@ -446,7 +494,7 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
     const normal = texture('normalmapTexture', false)
     proxies[name] = {
       category,
-      slot,
+      slot: category === 'clothes' ? clothesSlot(name, slot, rows) : slot,
       rows: n,
       count: source.length,
       binding: blob(bind),
