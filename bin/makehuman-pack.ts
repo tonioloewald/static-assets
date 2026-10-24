@@ -273,6 +273,17 @@ made. Heights are fractions of the body's (feet 0, crown 1).
 - glasses and masks keep the slot their pack gave them (they sit on the face)
 - feet only: shoes; hands only (wide, arm height): gloves; above the neck: hat
 - upper body only: top; lower body only: bottom; both: outfit
+
+`SLOT_DEBUG=1` prints each garment's low, high and width, which is how the
+thresholds were set: audit a new pack with it rather than trusting a name.
+Gloves are the one pair that nearly collide. A long-sleeved top reaches the
+same hands, so it is as wide and as high as a glove is; what separates them is
+that a glove covers the fingers and a sleeve stops at the wrist. Measured over
+all 107 garments that is a real gap but a narrow one — every glove is at least
+0.505 wide and the widest non-glove (a cyborg suit, and the men's casualsuits)
+is 0.480 — so the cut sits at 0.49. At the 0.4 it started from, a fisherman
+sweater missed being classified as gloves by 0.029 of body height, on the
+`high` test alone; now it fails on width too.
 */
 let bodyLow = Infinity
 let bodyHigh = -Infinity
@@ -303,9 +314,10 @@ function clothesSlot(name: string, slot: string, rows: number[][]): string {
   const H = bodyHigh - bodyLow
   const a = (lo - bodyLow) / H
   const b = (hi - bodyLow) / H
+  if (process.env.SLOT_DEBUG) console.error(`SLOT\t${name}\t${a.toFixed(3)}\t${b.toFixed(3)}\t${(wide / (H / 1.7)).toFixed(3)}`)
   if (a > 0.7) return 'hat'
   if (b < 0.5 && a < 0.05) return 'shoes'
-  if (a > 0.5 && b < 0.82 && wide > 0.4 * (H / 1.7)) return 'gloves'
+  if (a > 0.5 && b < 0.82 && wide > 0.49 * (H / 1.7)) return 'gloves'
   // Ends below the waist: a bottom (shorts and miniskirts start high).
   if (b < 0.66) return 'bottom'
   if (a > 0.35) return 'top'
