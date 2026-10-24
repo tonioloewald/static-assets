@@ -725,6 +725,10 @@ const macroFiles = [
   ...(await listDir('targets/macrodetails')),
   ...(await listDir('targets/macrodetails/height')),
   ...(await listDir('targets/macrodetails/proportions')),
+  // The bust: corners like the macros, plus cup and firmness (female only).
+  ...(await listDir('targets/breast')).filter((p) => /\/female-/.test(p)),
+  // Chest depth and pectorals.
+  ...(await listDir('targets/torso')).filter((p) => /torso-(scale-depth|muscle-pectoral)-/.test(p)),
 ].filter((p) => p.endsWith('.target'))
 
 
