@@ -433,9 +433,11 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
       // PNG only where the material is transparent AND the image has alpha:
       // most clothes carry an unused alpha channel.
       // Hair, brows and beards are cards: their alpha IS the hair, whatever
-      // the material says.
+      // the material says. Glasses' lenses are see-through the same way.
       const keepAlpha =
-        alpha && (mat.get('transparent') === 'True' || category !== 'clothes') && hasAlpha(join(dir, f))
+        alpha &&
+        (mat.get('transparent') === 'True' || category !== 'clothes' || slot === 'glasses') &&
+        hasAlpha(join(dir, f))
       const r = resized(join(dir, f), keepAlpha)
       proxyBytes += r.bytes.length
       return imageBlob(r.bytes, r.ext)
