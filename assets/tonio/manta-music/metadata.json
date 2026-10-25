@@ -1,0 +1,7 @@
+{
+  "credit": "Tonio Loewald. Created with AI assistance using Suno.",
+  "copyright": "Copyright 2026 Tonio Loewald. All rights reserved.",
+  "license": "All rights reserved. Owned by Tonio Loewald; not licensed for reuse.",
+  "note": "The music of Manta (manta-recon): Tonio's own tracks, created with AI assistance using Suno. NOT the CC BY 4.0 of the rest of tonio/ — this folder overrides the license. AAC (.m4a) cut from the uncompressed masters, so iOS Safari and the WKWebView app play them; each file also carries title, artist, copyright and a Suno credit in its own tags. Names are slugs of the track titles; a republished file needs a new name or a ?v= on the consumer's side (immutable cache).",
+  "publish": ["*.m4a"]
+}
