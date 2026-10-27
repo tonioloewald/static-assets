@@ -429,3 +429,12 @@ them out keeps this from being a mirror of a pack its author sells.
   `DarkGreen`, `White`, `Black`, `Leaves`, …) survive into the glb, and
   tosijs-3d's decorator maps them to roles (leaf, evergreen, bark). Renaming
   them breaks the shading silently.
+
+## The Base Mesh (`thebasemesh/<category>/`)
+
+CC0 base meshes from thebasemesh.com's model library (about 1,250, in its
+own 30 categories: kitchen, furniture, tools, …). Each asset downloads as a
+zip of fbx, obj and glb at REAL-WORLD SCALE with UVs and no materials; only
+the glb is kept, under the site's category. So far only `kitchen/teapot.glb`
+(about 4,800 triangles, 19 cm tall, the lid a separate node): tosijs-3d's
+material preview mesh.

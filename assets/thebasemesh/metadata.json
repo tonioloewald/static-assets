@@ -1,0 +1,7 @@
+{
+  "credit": "The Base Mesh (thebasemesh.com)",
+  "license": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved",
+  "link": "https://www.thebasemesh.com",
+  "note": "Base meshes from The Base Mesh's model library, in its own categories (kitchen/, …). Each asset's zip carries fbx, obj and glb at real-world scale; only the glb is kept. The kitchen teapot is tosijs-3d's material preview mesh.",
+  "publish": ["**/*.glb"]
+}
