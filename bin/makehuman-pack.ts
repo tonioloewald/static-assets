@@ -132,6 +132,8 @@ const mhw = JSON.parse(await source('rigs/default_weights.mhw')) as {
 // LIPS are the vertices MakeHuman's lip VOLUME targets move, weighted by how
 // far: exactly the lips' flesh. (All 24 lip targets also move the border
 // skin, and painted that way the colour smears onto the chin and philtrum.)
+// NIPPLES are what the nipple point and size targets move: clothes are fitted
+// over them smoothed flat, or every garment showed them.
 
 async function regionFrom(paths: string[]): Promise<Uint8Array> {
   const out = new Float32Array(vertexCount)
@@ -152,6 +154,9 @@ const regions = {
     ['upperlip-volume-incr', 'upperlip-volume-decr', 'lowerlip-volume-incr', 'lowerlip-volume-decr'].map(
       (t) => `targets/mouth/mouth-${t}.target`
     )
+  ),
+  nipples: await regionFrom(
+    ['nipple-point-incr', 'nipple-point-decr', 'nipple-size-incr', 'nipple-size-decr'].map((t) => `targets/breast/${t}.target`)
   ),
 }
 
