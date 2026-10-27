@@ -729,6 +729,9 @@ const macroFiles = [
   ...(await listDir('targets/breast')).filter((p) => /\/female-/.test(p)),
   // Chest depth and pectorals.
   ...(await listDir('targets/torso')).filter((p) => /torso-(scale-depth|muscle-pectoral)-/.test(p)),
+  // The waist: MakeHuman's Measure tab, its circumference alone (the weight
+  // macros barely narrow a woman's waist).
+  ...(await listDir('targets/measure')).filter((p) => /measure-waist-circ-/.test(p)),
 ].filter((p) => p.endsWith('.target'))
 
 
