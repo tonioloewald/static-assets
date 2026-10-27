@@ -31,6 +31,27 @@
         ]
       },
       {
+        "source": "/thebasemesh/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "The Base Mesh (thebasemesh.com)"
+          },
+          {
+            "key": "license",
+            "value": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved"
+          },
+          {
+            "key": "Link",
+            "value": "<https://www.thebasemesh.com>; rel=\"author\"; title=\"The Base Mesh (thebasemesh.com)\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/quaternius/**",
         "headers": [
           {
