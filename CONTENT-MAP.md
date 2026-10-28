@@ -435,6 +435,12 @@ them out keeps this from being a mirror of a pack its author sells.
 CC0 base meshes from thebasemesh.com's model library (about 1,250, in its
 own 30 categories: kitchen, furniture, tools, …). Each asset downloads as a
 zip of fbx, obj and glb at REAL-WORLD SCALE with UVs and no materials; only
-the glb is kept, under the site's category. So far only `kitchen/teapot.glb`
-(about 4,800 triangles, 19 cm tall, the lid a separate node): tosijs-3d's
-material preview mesh.
+the glb is kept, under the site's category. The meshes are quad models
+(the glb is triangulated), modest in size: a sample of twelve ran from 370
+to 10,400 triangles, 9 to 350 KB. They ship one glb per asset, PICKED, not
+mirrored.
+
+| File | Triangles | Size | Notes |
+| --- | --- | --- | --- |
+| `kitchen/teapot.glb` | ~4,800 | 19 cm tall | lid a separate node; tosijs-3d's material preview mesh |
+| `decoration/globe.glb` | ~1,500 | 42 cm tall | `globe` (the ball) and `globe_base` (stand and meridian) separate |
