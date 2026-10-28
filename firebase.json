@@ -136,6 +136,27 @@
         ]
       },
       {
+        "source": "/blender/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Blender Studio and community contributions (Blender Foundation), Human Base Meshes asset bundle"
+          },
+          {
+            "key": "license",
+            "value": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved"
+          },
+          {
+            "key": "Link",
+            "value": "<https://www.blender.org/download/demo-files/#assets>; rel=\"author\"; title=\"Blender Studio and community contributions (Blender Foundation), Human Base Meshes asset bundle\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/kenney/**",
         "headers": [
           {

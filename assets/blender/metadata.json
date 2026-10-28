@@ -1,0 +1,7 @@
+{
+  "credit": "Blender Studio and community contributions (Blender Foundation), Human Base Meshes asset bundle",
+  "license": "CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): no rights reserved",
+  "link": "https://www.blender.org/download/demo-files/#assets",
+  "note": "Human Base Meshes v1.4.1 (human-base-meshes-bundle-v1.4.1.zip from mirror.blender.org). The bundle is one .blend; the four full bodies (female/male, realistic/stylized) are exported to human-base-meshes/body-*.glb at the BASE LEVEL (multires and subsurf off), smooth-shaded (the .blend has them flat, which split every corner), each moved to the origin (the bundle lays them side by side) with its two eyes parented to it, no materials. A-pose, facing +Z, metres (1.61 to 1.79 m), quads triangulated, about 21k to 25k triangles, 560 to 680 KB. Inputs for tosijs-3d's universal character builder (auto-rig any mesh). The .blend and the heads, hands, feet, skulls and primitives are not exported.",
+  "publish": ["**/*.glb"]
+}

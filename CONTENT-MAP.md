@@ -444,3 +444,20 @@ mirrored.
 | --- | --- | --- | --- |
 | `kitchen/teapot.glb` | ~4,800 | 19 cm tall | lid a separate node; tosijs-3d's material preview mesh |
 | `decoration/globe.glb` | ~1,500 | 42 cm tall | `globe` (the ball) and `globe_base` (stand and meridian) separate |
+
+## Blender Human Base Meshes (`blender/human-base-meshes/`)
+
+CC0, Blender Studio and community contributions: the Human Base Meshes asset
+bundle (v1.4.1), one .blend. Only the four full bodies are exported, at the
+base level, smooth-shaded, each at the origin with its eyes:
+
+| File | Triangles | Height | Size |
+| --- | --- | --- | --- |
+| `body-female-realistic.glb` | ~23k | 1.65 m | 560 KB |
+| `body-male-realistic.glb` | ~23k | 1.69 m | 560 KB |
+| `body-female-stylized.glb` | ~28k | 1.62 m | 680 KB |
+| `body-male-stylized.glb` | ~28k | 1.80 m | 680 KB |
+
+A-pose, facing +Z, metres, no materials. Inputs for the universal character
+builder (auto-rig any mesh), and realistic and stylized proportions to test
+it on.
