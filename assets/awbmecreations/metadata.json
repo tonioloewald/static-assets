@@ -1,5 +1,5 @@
 {
   "credit": "awbmecreations",
-  "license": "The creator's own terms (not a standard licence): the models must not be distributed in any extractable form. Bare GLBs, on the CDN or anywhere public, are NOT OK; encrypting them does not help, since a page that draws them must decrypt them.",
-  "note": "DO NOT PUBLISH ANYTHING FROM THIS FOLDER until Tonio has heard back from the creator. Tonio is asking him whether a public web demo is acceptable. Use these models only locally, in private builds and in Tonio's own games. Never add a `publish` entry here, or in any metadata.json below this folder, without Tonio's explicit go-ahead. If a demo needs them, ask Tonio first; the decision rests with the creator, so it is not ours to make."
+  "license": "The creator's own terms (not a standard licence), and they differ by package: read each folder's metadata.json. The paid packages may not be distributed in any extractable form.",
+  "note": "DO NOT PUBLISH from this folder unless a package's own metadata.json says it may be published. `low poly vehicles` is NEVER to be published: the creator said a firm no, though packaged games may use it. Tonio is asking the creator about his FREE packages. Until a free package's folder records his answer, treat it as unpublishable too. Never add a `publish` entry without Tonio's explicit go-ahead."
 }
