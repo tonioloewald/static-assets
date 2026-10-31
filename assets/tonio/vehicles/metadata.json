@@ -1,0 +1,5 @@
+{
+  "credit": "Tonio Loewald (2026-10-31)",
+  "note": "Low-poly vehicles for tosijs-3d's ground vehicles and aircraft (board #3628, #3487). cars.glb is a library of seven cars (Sedan, Coupe, Pickup, SUV, Van, Station Wagon, Limousine), each with four wheels as separate child meshes named Wheel_*, plus a Motorcycle (Wheel_F, Wheel_R, Handlebars). Up +Y, facing +Z, origins on the ground; about half life size, so tosijs-3d uses them at scale 2. vstol.glb is one VSTOL (`Aircraft`, with `Engines` and `Rear Rotor`); vstols.glb holds two (`Aircraft`, `Disc`). `vstol over city.glb` is a scene, NOT published. Licensed by the parent folder (CC BY 4.0).",
+  "publish": ["cars.glb", "vstol.glb", "vstols.glb"]
+}
