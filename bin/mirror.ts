@@ -278,10 +278,16 @@ const needed = new Set(stagedPaths.map((f) => deepestFor(f)).filter(Boolean) as 
 const dropped = rules.length - needed.size
 rules.splice(0, rules.length, ...rules.filter((r) => needed.has(r)))
 const COMMON: [string, string][] = [
-  ['Access-Control-Allow-Origin', '*'],
-  ['Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS'],
   ['Cache-Control', 'public, max-age=31536000, immutable'],
   ['X-Robots-Tag', 'noindex'],
+]
+// WHO may read cross-origin is decided per request on Cloudflare, by
+// functions/_middleware.ts (our sites and development only), so `_headers` says
+// nothing about it. Firebase cannot run that check without a Cloud Function, so the
+// alternate target keeps the old open `*`: deploying there widens access again.
+const FIREBASE_CORS: [string, string][] = [
+  ['Access-Control-Allow-Origin', '*'],
+  ['Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS'],
 ]
 
 /*
@@ -326,7 +332,7 @@ const firebase = {
     trailingSlash: false,
     ignore: ['firebase.json', '**/.*', '**/node_modules/**'],
     headers: [
-      { source: '**', headers: COMMON.map(([key, value]) => ({ key, value })) },
+      { source: '**', headers: [...FIREBASE_CORS, ...COMMON].map(([key, value]) => ({ key, value })) },
       ...rules.map((r) => ({
         source: `/${r.path}/**`,
         headers: exposeFor(Object.entries(r.headers)).map(([key, value]) => ({ key, value })),

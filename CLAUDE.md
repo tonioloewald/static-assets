@@ -571,8 +571,13 @@ const { items, categories } = kit.userData.library   // {tree: 61, cliff: 56, ..
 const rocks = items.filter((i) => i.category === 'rock')
 ```
 
-Loaders fetch cross-origin, so `Access-Control-Allow-Origin: *` is required — it's
-set for every file by the generated config.
+Loaders fetch cross-origin, so every file needs `Access-Control-Allow-Origin`. On
+Cloudflare it is NOT `*`: `functions/_middleware.ts` echoes the request's origin
+when it is one of ours (`*.tosijs.net`, localhost / 127.0.0.1 / tosi.local, a
+private network address for a headset, our `*.pages.dev` previews) and sends none
+otherwise, with `Vary: Origin` (Tonio, 2026-10-31). A consumer on a new domain is
+added to its list. This limits who can BUILD ON the CDN from a page, not who can
+download a file. Firebase, the alternate target, still sends `*`.
 
 ## Rollouts not applicable here
 
