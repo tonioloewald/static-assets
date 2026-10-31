@@ -1,0 +1,5 @@
+{
+  "credit": "awbmecreations",
+  "license": "The creator's own terms (not a standard licence): the models must not be distributed in any extractable form. Bare GLBs, on the CDN or anywhere public, are NOT OK; encrypting them does not help, since a page that draws them must decrypt them.",
+  "note": "DO NOT PUBLISH ANYTHING FROM THIS FOLDER until Tonio has heard back from the creator. Tonio is asking him whether a public web demo is acceptable. Use these models only locally, in private builds and in Tonio's own games. Never add a `publish` entry here, or in any metadata.json below this folder, without Tonio's explicit go-ahead. If a demo needs them, ask Tonio first; the decision rests with the creator, so it is not ours to make."
+}
