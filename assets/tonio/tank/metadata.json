@@ -1,0 +1,5 @@
+{
+  "credit": "Tonio Loewald (2026-11-01)",
+  "note": "A small, cute tank for tosijs-3d's tracked vehicle (board #3628). tank2.glb: one material (`Olive Drab`, one texture), no skin. Forty track links a side (`track_link.L.00`…`.39`, `track_link.R.*`, each a node) carried round by the animations `Track.L` and `Track.R` (1 s each: one turn of the cycle); drive, idler and road wheels a side (`drive_wheel.L`, `idler_wheel.L`, `road_wheel_1.L`, …); `Turret` (yaw) → `Mantlet` (elevation) → `Barrel` → `Muzzle`, plus `Cupola` and `Hatch`. Up +Y, gun facing +Z, about 3 m wide and 6.3 m long. The .blend files are sources, NOT published. Licensed by the parent folder (CC BY 4.0).",
+  "publish": ["tank2.glb"]
+}
