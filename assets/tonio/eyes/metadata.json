@@ -1,6 +1,10 @@
 {
   "credit": "Tonio Loewald (2026-11-02)",
   "license": "CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no conditions",
+  "cors": "any",
   "note": "Eye textures for character eyeballs (Dramatis exports them; dramatis3d #3727). basic-eye and anime-eye: 256 × 256, the iris a disc of radius 48 centred at (128, 128) in three browns (#603813, #8c6239, #c69d6d) so it can be recoloured, a pupil, a darkening ring, the sclera filling the square (anime adds two glints). The SVGs are the art; the PNGs are rendered from them by dramatis3d's bin/eye-textures.ts. CC0, overriding the tonio namespace's CC BY.",
-  "publish": ["*.svg", "*.png"]
+  "publish": [
+    "*.svg",
+    "*.png"
+  ]
 }

@@ -57,6 +57,13 @@ type Meta = {
   attribution?: string
   link?: string
   license?: string
+  /**
+   * Who may READ these files from a page (CORS): `tosijs` (the default: our
+   * sites and development, functions/_middleware.ts) or `any` (every site).
+   * Inherited down the tree; a deeper folder may set it back. Generated into
+   * open-cors.json, which the middleware reads.
+   */
+  cors?: 'any' | 'tosijs'
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -106,6 +113,8 @@ const foldHeaders = (m: Meta): Record<string, string> => {
 
 type Rule = { path: string; headers: Record<string, string> }
 const rules: Rule[] = []
+/** Every folder that DECLARES `cors`, with what it declares (deepest wins). */
+const corsRules: [string, 'any' | 'tosijs'][] = []
 /**
  * Everything `publish` pushed into derived/ THIS run.
  *
@@ -163,6 +172,11 @@ const walk = (
   const activePub = localPub.length ? [...publishes, ...localPub] : publishes
   const activeEx = localEx.length ? [...excludes, ...localEx] : excludes
 
+  if (local?.cors !== undefined) {
+    if (local.cors !== 'any' && local.cors !== 'tosijs')
+      throw new Error(`${rel}/metadata.json: cors must be "any" or "tosijs", not ${JSON.stringify(local.cors)}`)
+    corsRules.push([rel, local.cors])
+  }
   const localHeaders = local ? foldHeaders(local) : {}
   const effective = { ...inheritedHeaders, ...localHeaders }
   if (rel !== '' && Object.keys(localHeaders).length > 0) {
@@ -342,11 +356,19 @@ const firebase = {
 }
 writeFileSync(join(ROOT, 'firebase.json'), JSON.stringify(firebase, null, 2) + '\n')
 
+// open-cors.json at repo root: the folders whose metadata declares `cors`,
+// shallowest first, for functions/_middleware.ts (deepest match wins; no match
+// is `tosijs`). Generated like _headers; committed like firebase.json, because
+// the Pages Functions bundle imports it at deploy time.
+corsRules.sort((a, b) => a[0].split('/').length - b[0].split('/').length || a[0].localeCompare(b[0]))
+writeFileSync(join(ROOT, 'open-cors.json'), JSON.stringify(corsRules, null, 2) + '\n')
+
 console.log(
   `mirror: ${pushed} pushed → derived/, ` +
     (unpublished ? `${unpublished} stale push(es) removed, ` : '') +
     `${files} file(s) staged → public/ ` +
     `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s)` +
     (dropped ? `, ${dropped} redundant` : '') + ' ' +
-    `→ _headers + firebase.json`
+    `→ _headers + firebase.json` +
+    ` · cors: ${corsRules.filter(([, c]) => c === 'any').map(([p]) => p).join(', ') || 'no'} open to any site`
 )

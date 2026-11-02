@@ -105,6 +105,7 @@ per-key, excludes accumulate). All fields optional; add more over time.
 | `shelved: true` | This pack is deliberately not built or shipped; `scan` skips it instead of regenerating its specs. |
 | `copyright` / `credit` / `attribution` / `license` | Convenience attribution; each becomes a literal response header of the same (lowercase) name on every file served from this namespace. |
 | `link` | A URL → a proper `Link: <url>; rel="author"` response header. |
+| `cors: "any" \| "tosijs"` | Who may READ these files from a page. Default `tosijs`: our sites and development only (`functions/_middleware.ts`). `any`: every site (`Access-Control-Allow-Origin: *`), for open assets other people's apps load, e.g. what Dramatis's exporter needs (makehuman, quaternius, tonio/eyes). Inherited; a deeper folder may set it back. Generated into `open-cors.json`. |
 | `headers: { name: value }` | Escape hatch — **any** key→value is emitted as a response header verbatim (overrides the convenience fields on key collision). |
 | `convert: Spec[]` | Conversion specs for this directory — see Conversion below. Not inherited (each declaring dir owns its own). |
 | `library: { slug, from[], categories?, exclude?, subsets? }` | Pack this directory's models into one glb at `/<namespace>/libraries/<slug>.glb`. See Libraries below. Not inherited. |
