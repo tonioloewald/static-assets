@@ -5,11 +5,12 @@ WHO MAY READ THE CDN FROM A PAGE (Cloudflare Pages middleware, runs on every req
 FOLDERS below. What follows is the rule for everything else.)
 
 Cross-origin reads are allowed only from our own sites and from development:
-*.tosijs.net, localhost / 127.0.0.1 / [::1] / tosi.local on any port, a private
-network address (a headset loads the dev server by the Mac's LAN IP, which
-changes), and this project's own *.pages.dev previews. Tonio, 2026-10-31: "They'll
-all be on .tosijs.net sites for the time being." A new consumer on another domain
-is added HERE.
+*.tosijs.net, loewald.com and its subdomains, localhost / 127.0.0.1 / [::1] /
+tosi.local on any port, a private network address (a headset loads the dev server
+by the Mac's LAN IP, which changes), and this project's own *.pages.dev previews.
+Tonio, 2026-10-31: "They'll all be on .tosijs.net sites for the time being";
+2026-11-04: "We need to allow loewald.com and subdomains in" (learn3d.loewald.com,
+the Blender book). A new consumer on another domain is added HERE.
 
 This is NOT access control. CORS decides whether another site's JavaScript may READ
 a file; anyone can still fetch the URL directly. It stops other sites building on
@@ -53,6 +54,7 @@ export const openPath = (path: string): boolean => {
 
 const ALLOWED: RegExp[] = [
   /^https:\/\/([a-z0-9-]+\.)*tosijs\.net$/,
+  /^https:\/\/([a-z0-9-]+\.)*loewald\.com$/,
   /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|tosi\.local)(:\d+)?$/,
   /^https?:\/\/(10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2})(:\d+)?$/,
   /^https:\/\/([a-z0-9-]+\.)*cdn-tosijs\.pages\.dev$/,
