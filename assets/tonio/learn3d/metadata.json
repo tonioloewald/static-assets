@@ -3,6 +3,11 @@
   "license": "CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no conditions",
   "link": "https://learn3d.loewald.com",
   "cors": "any",
-  "note": "The models and textures the Learn 3D with Blender book's tutorials and figures load (~/Learn-3D-with-Blender, blender/book.py asset()): the author's Cheetah 3D scenes, read by the book's .jas importer. cute-weasel.jas (2013, rigged and animated) with 'Weasel Texture (Vector).png' beside it; tank.jas and tank.gltf (Cheetah 3D's own glTF export of the same scene); vstol-over-city.jas (2015: the Particle City buildings and two VSTOL aircraft) with its window textures (windows-diffuse/emissive/bump.png) beside it. Each scene's textures sit beside it because the importer looks there. © Tonio Loewald, released under CC0, overriding the tonio namespace's CC BY.",
-  "publish": ["*.jas", "*.gltf", "*.png"]
+  "note": "The models and textures the Learn 3D with Blender book's tutorials and figures load (~/Learn-3D-with-Blender, blender/book.py asset()): the author's Cheetah 3D scenes, read by the book's .jas importer. cute-weasel.jas (2013, rigged and animated) with 'Weasel Texture (Vector).png' beside it; tank.jas and tank.gltf (Cheetah 3D's own glTF export of the same scene); vstol-over-city.jas (2015: the Particle City buildings and two VSTOL aircraft) with its window textures (windows-diffuse/emissive/bump.png) beside it. Each scene's textures sit beside it because the importer looks there. \u00a9 Tonio Loewald, released under CC0, overriding the tonio namespace's CC BY. learn3d-lettering.svg: the word Learn3D in Helvetica Neue Condensed Black, converted to outlines (from the author's extrude.jas), for the lettering tutorial.",
+  "publish": [
+    "*.jas",
+    "*.gltf",
+    "*.png",
+    "*.svg"
+  ]
 }
