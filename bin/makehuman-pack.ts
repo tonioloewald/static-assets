@@ -394,6 +394,14 @@ for (const category of ['clothes', 'hair', 'eyebrows', 'teeth', 'tongue']) {
     sources.push([category, name, join(SYSTEM, category, name), systemSlot(category, name)])
   }
 }
+// Body proxies: MakeHuman's own lighter skins over hm08 (741 to 13,868
+// vertices, all quads), bound by the same three-vertex binding as clothes
+// (a `.proxy` is an `.mhclo` by another name). The builder draws one in
+// place of the base mesh at a lower body detail.
+for (const name of readdirSync(join(SYSTEM, 'proxymeshes')).sort()) {
+  if (!existsSync(join(SYSTEM, 'proxymeshes', name, `${name}.proxy`))) continue
+  sources.push(['body', name, join(SYSTEM, 'proxymeshes', name), 'body'])
+}
 for (const [pack, slot] of Object.entries(PACK_SLOT)) {
   const root = join(SRC, 'packs', pack, 'clothes')
   for (const name of existsSync(root) ? readdirSync(root).sort() : []) {
@@ -405,9 +413,8 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
 }
 {
   for (const [category, name, dir, slot] of sources) {
-    const cloFile = existsSync(join(dir, `${name}.mhclo`))
-      ? `${name}.mhclo`
-      : readdirSync(dir).find((f) => f.endsWith('.mhclo'))!
+    const cloFile = [`${name}.mhclo`, `${name}.proxy`].find((f) => existsSync(join(dir, f))) ??
+      readdirSync(dir).find((f) => f.endsWith('.mhclo'))!
     const clo = readFileSync(join(dir, cloFile), 'utf8').split('\n')
     const head = new Map<string, string>()
     const rows: number[][] = []
@@ -454,7 +461,7 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
     bind.set(bytesOf(w), idx.byteLength)
     bind.set(bytesOf(d), idx.byteLength + w.byteLength)
     // The mesh: corners split by UV.
-    const obj = readFileSync(join(dir, head.get('obj_file') ?? cloFile.replace(/\.mhclo$/, '.obj')), 'utf8')
+    const obj = readFileSync(join(dir, head.get('obj_file') ?? cloFile.replace(/\.(mhclo|proxy)$/, '.obj')), 'utf8')
     const vt: number[][] = []
     let objVerts = 0
     const corners = new Map<string, number>()
@@ -487,7 +494,7 @@ for (const [pack, slot] of Object.entries(PACK_SLOT)) {
     }
     // The material: its textures, resized.
     const mat = new Map<string, string>()
-    const matFile = [head.get('material'), cloFile.replace(/\.mhclo$/, '.mhmat')].find((f) => f && existsSync(join(dir, f)))
+    const matFile = [head.get('material'), cloFile.replace(/\.(mhclo|proxy)$/, '.mhmat')].find((f) => f && existsSync(join(dir, f)))
     for (const line of (matFile ? readFileSync(join(dir, matFile), 'utf8') : '').split('\n')) {
       const m = line.trim().match(/^(\w+)\s+(.*)$/)
       if (m) mat.set(m[1], m[2])
