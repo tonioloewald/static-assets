@@ -1,0 +1,15 @@
+{
+  "credit": "Tonio Loewald",
+  "license": "CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no conditions",
+  "link": "https://3d.tosijs.net",
+  "cors": "any",
+  "note": "Tonio's AI-generated content: concept images (*.jpeg, front views of characters, a helijet from four sides, a hexapod exoskeleton) and the meshes generated from them (*.glb, one mesh each, unrigged, about 1.9 units tall and centred on the origin, PBR colour, normal and metallic-roughness maps). The number in a mesh's name is its triangle count (10k = about 10,000). For tosijs-3d's auto-rigger and Dramatis's 'bring your hero' door. Released under CC0, overriding the tonio namespace's CC BY. The published meshes have their PNG textures re-encoded as JPEG (static-assets bin/glb-jpeg.ts, quality 88, 2048 px): about a third of the size, core glTF. source/ holds the files as generated, including the 2M-triangle meshes (about 70 MB each, too big for the CDN), and is not published.",
+  "publish": [
+    "*.glb",
+    "*.jpeg"
+  ],
+  "exclude": [
+    "source/**",
+    "*-2M.glb"
+  ]
+}
