@@ -228,6 +228,48 @@
         ]
       },
       {
+        "source": "/tonio/learn3d/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Tonio Loewald"
+          },
+          {
+            "key": "license",
+            "value": "CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no conditions"
+          },
+          {
+            "key": "Link",
+            "value": "<https://learn3d.loewald.com>; rel=\"author\"; title=\"Tonio Loewald\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
+        "source": "/tonio/ai/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Tonio Loewald"
+          },
+          {
+            "key": "license",
+            "value": "CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no conditions"
+          },
+          {
+            "key": "Link",
+            "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"Tonio Loewald\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/tonio/vehicles/**",
         "headers": [
           {

@@ -8,7 +8,15 @@
     "any"
   ],
   [
+    "tonio/ai",
+    "any"
+  ],
+  [
     "tonio/eyes",
+    "any"
+  ],
+  [
+    "tonio/learn3d",
     "any"
   ]
 ]
