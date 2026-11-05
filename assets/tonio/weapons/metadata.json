@@ -1,0 +1,13 @@
+{
+  "credit": "Tonio Loewald",
+  "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): free to use, share and adapt, with credit to Tonio Loewald",
+  "link": "https://3d.tosijs.net",
+  "cors": "any",
+  "note": "Tonio's test weapons, modelled by hand for omnidude (no AI involved): Pistol, SMG (with Folding Stock), Assault Rifle (with Scope), Rocket Launcher, Dagger, Short Sword, Long Sword, Hand and a Half, Spear, Buckler and a Game Controller, each a `.model` export of weapons.glb. A HELD-ITEM LIBRARY: each weapon's ORIGIN IS ITS MAIN-HAND GRIP, +Y runs up the grip, +Z is forward (a gun's muzzle, a blade's edge), metres at real sizes (a 26 cm pistol, a 0.9 m rifle, a 42 cm dagger, a 1.15 m long sword, a 2.3 m spear, a 40 cm buckler). Markers are children of each weapon: `<name>_grip` (the origin), `<name>_muzzle` (where a gun's shot leaves, on its axis) and `<name>_tip` (a blade's or spear's point). Made from source/weapons.glb (as exported from Cheetah 3D, not published) by static-assets bin/tonio-weapons.ts, which finds each grip by rule and sets each size; rerun it after editing the source.",
+  "publish": [
+    "weapons.glb"
+  ],
+  "exclude": [
+    "source/**"
+  ]
+}
