@@ -18,5 +18,9 @@
   [
     "tonio/learn3d",
     "any"
+  ],
+  [
+    "tonio/weapons",
+    "any"
   ]
 ]
