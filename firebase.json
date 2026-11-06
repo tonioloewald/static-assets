@@ -396,6 +396,27 @@
         ]
       },
       {
+        "source": "/polyhaven/fabrics/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Poly Haven (Rico Cilliers, Rob Tuytel, Greg Zaal)"
+          },
+          {
+            "key": "license",
+            "value": "CC0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no credit required"
+          },
+          {
+            "key": "Link",
+            "value": "<https://polyhaven.com/textures/fabric>; rel=\"author\"; title=\"Poly Haven (Rico Cilliers, Rob Tuytel, Greg Zaal)\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
         "source": "/noaa/earth/**",
         "headers": [
           {

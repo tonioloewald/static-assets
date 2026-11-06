@@ -8,6 +8,10 @@
     "any"
   ],
   [
+    "polyhaven/fabrics",
+    "any"
+  ],
+  [
     "tonio/ai",
     "any"
   ],
