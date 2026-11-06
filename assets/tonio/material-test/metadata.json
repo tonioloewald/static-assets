@@ -1,0 +1,7 @@
+{
+  "cors": "any",
+  "note": "Tonio's material test object: a ball (Ball) and a camera framing it (Cheetah 3D). tosijs-3d's material previews (the swatches in a material picker) are rendered on the ball, its UV test texture replaced by the material being previewed.",
+  "publish": [
+    "material-test.glb"
+  ]
+}
