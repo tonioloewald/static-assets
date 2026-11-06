@@ -24,7 +24,7 @@ the way up from its butt; a shield's is the middle of its back.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-type Kind = 'gun' | 'blade' | 'spear' | 'shield' | 'prop'
+type Kind = 'gun' | 'blade' | 'saber' | 'spear' | 'shield' | 'prop'
 /** Each weapon: its kind, and its size along its longest axis in metres. */
 const WEAPONS: Record<string, { kind: Kind; size: number }> = {
   Pistol: { kind: 'gun', size: 0.264 },
@@ -35,6 +35,7 @@ const WEAPONS: Record<string, { kind: Kind; size: number }> = {
   'Short Sword': { kind: 'blade', size: 0.75 },
   'Long Sword': { kind: 'blade', size: 1.15 },
   'Hand and a Half': { kind: 'blade', size: 1.3 },
+  'Plasma Blade': { kind: 'saber', size: 1.15 },
   Spear: { kind: 'spear', size: 2.32 },
   Buckler: { kind: 'shield', size: 0.4 },
   'Game Controller': { kind: 'prop', size: 0.16 },
@@ -125,7 +126,8 @@ const range = (pts: V3[], k: number) => {
 }
 
 /** The grip, by kind (see the header). `own` leaves out its parts (a stock). */
-function gripOf(kind: Kind, pts: V3[], own: V3[]): V3 {
+function gripOf(kind: Kind, pts: V3[], own: V3[], hilt: V3[]): V3 {
+  if (kind === 'saber') return [0, range(hilt, 1)[1] - 2 * HALF_HAND, 0]
   const [y0, y1] = range(pts, 1)
   const [z0, z1] = range(pts, 2)
   if (kind === 'gun') {
@@ -160,7 +162,7 @@ function markerOf(kind: Kind, pts: V3[]): { name: string; at: V3 } | null {
     const [fy0, fy1] = range(front, 1)
     return { name: 'muzzle', at: [0, (fy0 + fy1) / 2, z1] }
   }
-  if (kind === 'blade' || kind === 'spear') return { name: 'tip', at: [0, range(pts, 1)[1], 0] }
+  if (kind === 'blade' || kind === 'saber' || kind === 'spear') return { name: 'tip', at: [0, range(pts, 1)[1], 0] }
   return null
 }
 
@@ -171,9 +173,16 @@ for (const [i, node] of (json.nodes as any[]).entries()) {
   const pts = pointsOf(i)
   const own: V3[] = []
   for (const f of meshPositions(node)) for (let k = 0; k < f.length; k += 3) own.push([f[k], f[k + 1], f[k + 2]])
+  // A saber's hilt: its primitives that are not the beam.
+  const hilt: V3[] = []
+  for (const p of node.mesh != null ? json.meshes[node.mesh].primitives : []) {
+    if (String(json.materials?.[p.material]?.name ?? '').startsWith('plasma')) continue
+    const v = readFloats(p.attributes.POSITION)
+    for (let k = 0; k < v.length; k += 3) hilt.push([v[k], v[k + 1], v[k + 2]])
+  }
   const extent = Math.max(...[0, 1, 2].map((k) => { const [a, b] = range(pts, k); return b - a }))
   const f = spec.size / extent
-  const g = gripOf(spec.kind, pts, own)
+  const g = gripOf(spec.kind, pts, own, hilt)
   const marker = markerOf(spec.kind, pts)
   const move = ([x, y, z]: V3): V3 => [(x - g[0]) * f, (y - g[1]) * f, (z - g[2]) * f]
   // The weapon's own vertices: about the grip, at size.

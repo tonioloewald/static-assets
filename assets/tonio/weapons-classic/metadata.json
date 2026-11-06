@@ -1,0 +1,10 @@
+{
+  "credit": "Tonio Loewald",
+  "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): free to use, share and adapt, with credit to Tonio Loewald",
+  "link": "https://3d.tosijs.net",
+  "cors": "any",
+  "note": "Tonio's test weapons, TEXTURED: the same held-item library as tonio/weapons (origin at the main-hand grip, +Y up the grip, +Z forward, real sizes; _grip, _muzzle, _tip markers; each weapon a `.model` export) with one baked 2048 atlas (base colour, ORM, normal) from bake_classic.py, plus a Plasma Blade (an emissive core and a translucent red glow; its grip a hand's width below the emitter, its tip the beam's end). weapons.glb is made from weapons_classic.glb (Blender's bake export) by static-assets bin/tonio-weapons.ts: `bun bin/tonio-weapons.ts assets/tonio/weapons-classic/weapons_classic.glb assets/tonio/weapons-classic/weapons.glb`. Only weapons.glb ships.",
+  "publish": [
+    "weapons.glb"
+  ]
+}
