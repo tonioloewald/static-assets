@@ -1,0 +1,12 @@
+{
+  "credit": "Poly Haven (Rico Cilliers, Rob Tuytel, Greg Zaal)",
+  "license": "CC0 (https://creativecommons.org/publicdomain/zero/1.0/): public domain, no credit required",
+  "link": "https://polyhaven.com/textures/fabric",
+  "cors": "any",
+  "note": "A curated set of Poly Haven's fabric textures for tosijs-3d's cloth materials, re-encoded small: each fabric in two tiers, lite (512 px colour + normal) and full (1024 px colour + normal, 512 px greyscale roughness), from the 1K originals (cached under source/, not published). fabrics.json is the manifest (names, authors, the metres one tile covers, files). Built by static-assets bin/polyhaven-fabrics.ts: `bun bin/polyhaven-fabrics.ts`. Normals are OpenGL convention (glTF's).",
+  "publish": [
+    "fabrics.json",
+    "*/lite/*.jpg",
+    "*/full/*.jpg"
+  ]
+}
