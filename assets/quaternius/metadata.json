@@ -168,6 +168,42 @@
           ]
         }
       ]
+    },
+    {
+      "output": "UAL_builder.glb",
+      "input": "UAL1.glb",
+      "clips": [
+        "A_TPose",
+        "Idle_Loop",
+        "Walk_Loop",
+        "Jog_Fwd_Loop",
+        "Sprint_Loop",
+        "Crouch_Idle_Loop",
+        "Crouch_Fwd_Loop",
+        "Jump_Loop",
+        "Dance_Loop",
+        "Sitting_Idle_Loop",
+        "Swim_Fwd_Loop",
+        "Punch_Cross",
+        "Pistol_Idle_Loop",
+        "Pistol_Aim_Neutral",
+        "Pistol_Shoot",
+        "Sword_Idle",
+        "Sword_Attack"
+      ],
+      "merge": [
+        {
+          "input": "UAL2.glb",
+          "clips": [
+            "Sword_Regular_Combo",
+            "Sword_Heavy_Combo",
+            "Sword_Block",
+            "Idle_Shield_Loop",
+            "Bow_Aim_Neutral",
+            "Bow_Shoot"
+          ]
+        }
+      ]
     }
   ]
 }
