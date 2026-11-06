@@ -40,8 +40,13 @@ const WEAPONS: Record<string, { kind: Kind; size: number }> = {
   Buckler: { kind: 'shield', size: 0.4 },
   'Game Controller': { kind: 'prop', size: 0.16 },
 }
-/** Half a hand's width: a blade's grip centre below its guard. */
-const HALF_HAND = 0.05
+/**
+ * A blade's grip centre below its guard, in METRES at the weapon's final
+ * size: half a hand and a little clearance. (It used to be taken before the
+ * weapon was scaled, so it shrank with the weapon: 4.2 cm on the long sword,
+ * 2.5 cm on the dagger.) A pistol's handle top is 3.8 cm above its grip.
+ */
+const BELOW_GUARD = 0.045
 
 const root = join(import.meta.dir, '..', 'assets', 'tonio', 'weapons')
 const [input = join(root, 'source', 'weapons.glb'), output = join(root, 'weapons.glb')] =
@@ -126,8 +131,9 @@ const range = (pts: V3[], k: number) => {
 }
 
 /** The grip, by kind (see the header). `own` leaves out its parts (a stock). */
-function gripOf(kind: Kind, pts: V3[], own: V3[], hilt: V3[]): V3 {
-  if (kind === 'saber') return [0, range(hilt, 1)[1] - 2 * HALF_HAND, 0]
+function gripOf(kind: Kind, pts: V3[], own: V3[], hilt: V3[], f: number): V3 {
+  // A saber's emitter shroud is its guard: the blade rule on its hilt alone.
+  if (kind === 'saber') return gripOf('blade', hilt, hilt, hilt, f)
   const [y0, y1] = range(pts, 1)
   const [z0, z1] = range(pts, 2)
   if (kind === 'gun') {
@@ -146,7 +152,7 @@ function gripOf(kind: Kind, pts: V3[], own: V3[], hilt: V3[]): V3 {
     // The guard is the widest part across the edge.
     const reach = Math.max(...pts.map((p) => Math.abs(p[2])))
     const guard = Math.min(...pts.filter((p) => Math.abs(p[2]) >= 0.9 * reach).map((p) => p[1]))
-    return [0, guard - HALF_HAND, 0]
+    return [0, guard - BELOW_GUARD / f, 0]
   }
   if (kind === 'spear') return [0, y0 + 0.4 * (y1 - y0), 0]
   if (kind === 'shield') return [0, (y0 + y1) / 2, z0]
@@ -182,7 +188,7 @@ for (const [i, node] of (json.nodes as any[]).entries()) {
   }
   const extent = Math.max(...[0, 1, 2].map((k) => { const [a, b] = range(pts, k); return b - a }))
   const f = spec.size / extent
-  const g = gripOf(spec.kind, pts, own, hilt)
+  const g = gripOf(spec.kind, pts, own, hilt, f)
   const marker = markerOf(spec.kind, pts)
   const move = ([x, y, z]: V3): V3 => [(x - g[0]) * f, (y - g[1]) * f, (z - g[2]) * f]
   // The weapon's own vertices: about the grip, at size.
