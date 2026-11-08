@@ -3,6 +3,6 @@
   "license": "Free for all uses: 'may be copied, modified, or redistributed without permission' (mocap.cs.cmu.edu FAQ), but 'you may not resell this data directly, even in converted form' (mocap.cs.cmu.edu). Bruce Hahne places no additional restrictions on the BVH conversion (READMEFIRST.txt). Checked 2026-11-08. Published work is asked to acknowledge: 'The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.'",
   "cors": "any",
   "link": "http://mocap.cs.cmu.edu",
-  "note": "TEST FIXTURES for tosijs-3d's BVH reader (#3843, step 1), not a library: 02_01 (subject 2, walk) and 111_37 (subject 111, wave), as Bruce Hahne's conversion ships them (120 fps, Frame Time .0083333; ZYX channels; CMU units, about 1.8 to the hip). Not in `publish`: they never reach the CDN.",
+  "note": "TEST FIXTURES for tosijs-3d's BVH reader (#3843, step 1), not a library: 02_01 (subject 2, walk) and 111_37 (subject 111, wave), as Bruce Hahne's conversion ships them (120 fps, Frame Time .0083333; ZYX channels; CMU units, not metres). Not in `publish`: they never reach the CDN.",
   "publish": []
 }
