@@ -288,9 +288,79 @@ files a directory of their own rather than to try to out-clever the format.
 */
 const deepestFor = (file: string): Rule | undefined =>
   rules.filter((r) => file === r.path || file.startsWith(r.path + '/')).pop()
-const needed = new Set(stagedPaths.map((f) => deepestFor(f)).filter(Boolean) as Rule[])
-const dropped = rules.length - needed.size
-rules.splice(0, rules.length, ...rules.filter((r) => needed.has(r)))
+const claims = new Map<Rule, string[]>()
+for (const f of stagedPaths) {
+  const r = deepestFor(f)
+  if (!r) continue
+  const got = claims.get(r)
+  if (got) got.push(f)
+  else claims.set(r, [f])
+}
+const dropped = rules.length - claims.size
+
+/*
+AND A RULE THAT SURVIVES STILL UNIONS ONTO ITS DESCENDANTS.
+
+Dropping the fully-covered rules is not enough, which took a second
+duplicate-header bug to see. A namespace rule survives as soon as ONE file
+under it lacks a deeper rule of its own — and it then unions onto every
+sibling that HAS one, so the specific attribution is back to being noise.
+
+Measured on /tonio/: `tonio/material-test` declares only `cors`, so it grows
+no header rule of its own, which kept /tonio/* alive; tonio/weapons' new CC0
+licence then arrived alongside the namespace's CC BY, two `license` headers
+with the stricter one first. Every tonio sub-namespace was doubling, and
+tonio/ai and tonio/eyes had been doing it since the day they were added.
+
+So a surviving rule with deeper rules beneath it is replaced by one rule per
+CHILD that actually claims it. Those children are disjoint from the deeper
+rules' paths, so every file matches exactly one block again and the namespace
+rule goes. It is the fix the comment above prescribed — give those files a
+directory of their own — done to the generated config instead of by hand, so
+a new folder cannot reintroduce it.
+
+A file sitting directly in the namespace root beside overriding
+sub-namespaces is the one shape `_headers` cannot express: its own directory
+IS the namespace, so there is no narrower pattern to write. That warns and
+names the file rather than shipping a silent conflict.
+*/
+const resolved: Rule[] = []
+let split = 0
+for (const [rule, files] of claims) {
+  const deeper = rules.filter((o) => o !== rule && o.path.startsWith(rule.path + '/'))
+  if (!deeper.length) {
+    resolved.push(rule)
+    continue
+  }
+  split++
+  const children = new Set<string>()
+  for (const f of files) {
+    const rest = f.slice(rule.path.length + 1)
+    if (!rest.includes('/')) {
+      console.warn(
+        `mirror: ${f} sits directly in /${rule.path}/ beside sub-namespaces that ` +
+          `override its headers. _headers cannot exclude a path from a pattern, so ` +
+          `those keys will double on every file below. Give it a directory of its own.`
+      )
+      children.add('')
+      continue
+    }
+    children.add(rest.slice(0, rest.indexOf('/')))
+  }
+  for (const child of children) {
+    const path = child ? `${rule.path}/${child}` : rule.path
+    const under = deeper.filter((o) => o.path.startsWith(path + '/'))
+    if (under.length) {
+      throw new Error(
+        `mirror: /${path}/* would also match ${under.map((o) => '/' + o.path).join(', ')}, ` +
+          `which would double their headers — the case this split exists to prevent`
+      )
+    }
+    resolved.push({ path, headers: rule.headers })
+  }
+}
+rules.splice(0, rules.length, ...resolved)
+rules.sort((a, b) => a.path.split('/').length - b.path.split('/').length)
 const COMMON: [string, string][] = [
   ['Cache-Control', 'public, max-age=31536000, immutable'],
   ['X-Robots-Tag', 'noindex'],
@@ -368,7 +438,8 @@ console.log(
     (unpublished ? `${unpublished} stale push(es) removed, ` : '') +
     `${files} file(s) staged → public/ ` +
     `(${hardlinked} hardlinked) · ${rules.length} attributed namespace(s)` +
-    (dropped ? `, ${dropped} redundant` : '') + ' ' +
+    (dropped ? `, ${dropped} redundant` : '') +
+    (split ? `, ${split} split off its sub-namespaces` : '') + ' ' +
     `→ _headers + firebase.json` +
     ` · cors: ${corsRules.filter(([, c]) => c === 'any').map(([p]) => p).join(', ') || 'no'} open to any site`
 )

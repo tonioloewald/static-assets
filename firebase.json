@@ -115,27 +115,6 @@
         ]
       },
       {
-        "source": "/tonio/**",
-        "headers": [
-          {
-            "key": "credit",
-            "value": "Tonio Loewald"
-          },
-          {
-            "key": "license",
-            "value": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): free to use, share and adapt, with credit to Tonio Loewald"
-          },
-          {
-            "key": "Link",
-            "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"Tonio Loewald\""
-          },
-          {
-            "key": "Access-Control-Expose-Headers",
-            "value": "credit, license, Link"
-          }
-        ]
-      },
-      {
         "source": "/speech/**",
         "headers": [
           {
@@ -262,6 +241,27 @@
           {
             "key": "Link",
             "value": "<https://learn3d.loewald.com>; rel=\"author\"; title=\"Tonio Loewald\""
+          },
+          {
+            "key": "Access-Control-Expose-Headers",
+            "value": "credit, license, Link"
+          }
+        ]
+      },
+      {
+        "source": "/tonio/material-test/**",
+        "headers": [
+          {
+            "key": "credit",
+            "value": "Tonio Loewald"
+          },
+          {
+            "key": "license",
+            "value": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/): free to use, share and adapt, with credit to Tonio Loewald"
+          },
+          {
+            "key": "Link",
+            "value": "<https://3d.tosijs.net>; rel=\"author\"; title=\"Tonio Loewald\""
           },
           {
             "key": "Access-Control-Expose-Headers",

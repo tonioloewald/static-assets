@@ -612,7 +612,29 @@ block. The redundant rule is reported: `8 attributed namespace(s), 1 redundant`.
 One case the format cannot express: loose files directly in a namespace *and*
 sub-namespaces overriding a key — `_headers` has no way to exclude a path from a
 pattern, so the conflicting key would double. Nothing hits it; if something does,
-give those loose files a directory of their own rather than out-clever the format.
+`mirror.ts` warns and names the file, and the answer is to give it a directory of
+its own rather than out-clever the format.
+
+**Dropping the covered rules was NOT enough, and it took a second duplicate to
+see why.** A namespace rule survives as soon as ONE file under it has no deeper
+rule of its own — and it then unions onto every sibling that HAS one. Found
+while putting `tonio/weapons` under CC0: `tonio/material-test` declares only
+`cors`, so it grows no header rule, which kept `/tonio/*` alive, and the weapons
+came back carrying **two** `license` headers, CC BY and CC0, the stricter one
+first. Every tonio sub-namespace was doubling, and `tonio/ai` and `tonio/eyes`
+had been doing it since the day they were added — a CC0 pack publicly labelled
+CC BY, which is the one mistake the attribution rules here exist to prevent.
+
+So a surviving rule that has deeper rules beneath it is now **replaced by one
+rule per child that actually claims it** (`1 split off its sub-namespaces` in
+the report). Those children are disjoint from the deeper paths, so the
+namespace rule goes and every file matches exactly one block again. It is the
+same remedy the paragraph above prescribes, applied to the generated config
+instead of by hand, so a new folder cannot reintroduce it; if a synthesised
+pattern would still cover a deeper rule, mirror throws rather than ship it.
+
+Verified by construction after the fix, over the whole config: no pattern is a
+prefix of another, and all 1,547 staged files match exactly one block.
 
 Firebase is still unverified on this point, since Cloudflare is the live host.
 
