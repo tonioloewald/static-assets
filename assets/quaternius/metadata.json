@@ -165,6 +165,8 @@
         "Hit_Chest",
         "Hit_Head",
         "Hit_Stomach",
+        "Hit_Shoulder_L",
+        "Hit_Shoulder_R",
         "PickUp_Kneeling"
       ],
       "merge": [
