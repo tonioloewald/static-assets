@@ -167,7 +167,10 @@
         "Hit_Stomach",
         "Hit_Shoulder_L",
         "Hit_Shoulder_R",
-        "PickUp_Kneeling"
+        "PickUp_Kneeling",
+        "Idle_Talking_Loop",
+        "Counter_Give",
+        "Counter_Show"
       ],
       "merge": [
         {
@@ -183,7 +186,11 @@
             "Bow_Aim_Up",
             "Bow_Aim_Neutral",
             "Bow_Aim_Down",
-            "Bow_Shoot"
+            "Bow_Shoot",
+            "Yes",
+            "Idle_No_Loop",
+            "Surprise",
+            "Idle_FoldArms_Loop"
           ]
         }
       ]
