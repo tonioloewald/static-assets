@@ -19,12 +19,14 @@ transform). Markers, children of each weapon:
 
 The grip is found by rule, not by hand: a gun's is its rearmost handle under
 the body; a blade's is half a hand below its guard; a spear's two fifths of
-the way up from its butt; a shield's is the middle of its back.
+the way up from its butt; a shield's is the middle of its back, a kite
+shield's the middle of the round top's back (half its width below the top);
+a bow's is its origin, where it was modelled.
 */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-type Kind = 'gun' | 'blade' | 'saber' | 'spear' | 'shield' | 'prop'
+type Kind = 'gun' | 'blade' | 'saber' | 'spear' | 'shield' | 'kite' | 'bow' | 'prop'
 /** Each weapon: its kind, and its size along its longest axis in metres. */
 const WEAPONS: Record<string, { kind: Kind; size: number }> = {
   Pistol: { kind: 'gun', size: 0.264 },
@@ -38,6 +40,10 @@ const WEAPONS: Record<string, { kind: Kind; size: number }> = {
   'Plasma Blade': { kind: 'saber', size: 1.15 },
   Spear: { kind: 'spear', size: 2.32 },
   Buckler: { kind: 'shield', size: 0.4 },
+  // The buckler stretched down to a point, at the buckler's scale (0.4 / 0.692).
+  'Kite Shield': { kind: 'kite', size: 0.529 },
+  // Modelled with its origin at the grip, at Tonio's scale (1.074 × 1.158 m).
+  Bow: { kind: 'bow', size: 1.244 },
   'Game Controller': { kind: 'prop', size: 0.16 },
 }
 /**
@@ -156,6 +162,11 @@ function gripOf(kind: Kind, pts: V3[], own: V3[], hilt: V3[], f: number): V3 {
   }
   if (kind === 'spear') return [0, y0 + 0.4 * (y1 - y0), 0]
   if (kind === 'shield') return [0, (y0 + y1) / 2, z0]
+  if (kind === 'kite') {
+    const [x0, x1] = range(pts, 0)
+    return [0, y1 - (x1 - x0) / 2, z0]
+  }
+  if (kind === 'bow') return [0, 0, 0]
   const [x0, x1] = range(pts, 0)
   return [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]
 }
