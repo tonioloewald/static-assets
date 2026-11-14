@@ -158,7 +158,14 @@
         "Pistol_Shoot",
         "Pistol_Reload",
         "Sword_Idle",
-        "Sword_Attack"
+        "Sword_Attack",
+        "Death01",
+        "Death02",
+        "Roll",
+        "Hit_Chest",
+        "Hit_Head",
+        "Hit_Stomach",
+        "PickUp_Kneeling"
       ],
       "merge": [
         {
@@ -166,7 +173,10 @@
           "clips": [
             "ClimbUp_1m",
             "ClimbUp_2m",
-            "SafetyVault"
+            "SafetyVault",
+            "NinjaJump_Land",
+            "Hit_Knockback",
+            "Chest_Open"
           ]
         }
       ]
