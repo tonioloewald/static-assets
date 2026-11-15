@@ -1,5 +1,5 @@
 {
-  "credit": "tosijs-3d \u2014 placeholder voice acting generated with Resemble / Chatterbox, and locally with Orpheus 3B (shopkeeper-*)",
+  "credit": "tosijs-3d \u2014 placeholder voice acting generated with Resemble / Chatterbox, and locally with Qwen3-TTS (shopkeeper-*)",
   "license": "Generated test/placeholder audio; not authored for redistribution",
   "link": "https://3d.tosijs.net",
   "note": "Our own generated placeholder VO, so index.json ships with it \u2014 an index of content we authored is not a creator's catalogue.",
