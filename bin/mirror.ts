@@ -158,6 +158,9 @@ const link = (from: string, to: string): void => {
  *
  * Both accumulate down the tree, anchored to the directory that declared them.
  */
+/** Directories marked `"local": true`: nothing beneath them may ever be staged. */
+const localDirs: string[] = []
+
 const walk = (
   dir: string,
   inheritedHeaders: Record<string, string>,
@@ -166,6 +169,7 @@ const walk = (
 ): void => {
   const rel = toPosix(relative(SRC, dir))
   const local = loadMeta(dir)
+  if (local?.local === true) localDirs.push(rel)
 
   const localPub = (local?.publish ?? []).map((g) => globToRe(g, rel))
   const localEx = (local?.exclude ?? []).map((g) => globToRe(g, rel))
@@ -258,6 +262,23 @@ if (pushedPaths.size || existsSync(PUSHED_MANIFEST)) {
 }
 
 stageTree(DERIVED)
+
+// A LOCAL directory's content must never reach public/: Mixamo's terms forbid
+// redistributing it, and an empty `publish` once did not stop its conversions
+// shipping (they landed in derived/). convert.ts now writes them to local/; this
+// is the guard if anything ever puts one back.
+const leaked = stagedPaths.filter((f) =>
+  localDirs.some((d) => f === d || f.startsWith(d + '/'))
+)
+if (leaked.length) {
+  rmSync(OUT, { recursive: true, force: true })
+  console.error(
+    `mirror: REFUSED — ${leaked.length} file(s) from a local-only directory would ship:\n  ` +
+      leaked.slice(0, 20).join('\n  ') +
+      '\npublic/ removed. Delete them from derived/ and rebuild.'
+  )
+  process.exit(1)
+}
 
 // ---- generate host config (Cloudflare _headers + firebase.json) -----------
 // The common block carries CORS/cache/noindex; both host formats are generated

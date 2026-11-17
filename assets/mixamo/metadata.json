@@ -1,7 +1,8 @@
 {
   "credit": "Mixamo (Adobe), downloaded by Tonio Loewald 2026-11-14",
   "license": "Mixamo: royalty-free to use in personal, commercial and non-profit projects; the characters and animations may NOT be redistributed or sold as standalone files (Adobe's Mixamo FAQ). So: never published. Checked 2026-11-14.",
-  "note": "LOCAL ONLY. Tonio's Mixamo downloads (eight packs plus loose rifle and prone clips) for testing animation import and the rifle/bow work (#4096). Each pack's own X Bot (with skin) carries its clips into one GLB in derived/mixamo/. Not in `publish`: none of it reaches the CDN.",
+  "local": true,
+  "note": "LOCAL ONLY. Tonio's Mixamo downloads (eight packs plus loose rifle and prone clips) for testing animation import and the rifle/bow work (#4096). Each pack's own X Bot (with skin) carries its clips into one GLB in local/mixamo/ (not derived/, which ships). `local: true` keeps convert's output there and makes mirror refuse to stage anything under mixamo/.",
   "publish": [],
   "convert": [
     {

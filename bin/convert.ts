@@ -46,6 +46,12 @@ import {
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SRC = join(ROOT, 'assets')
 const DERIVED = join(ROOT, 'derived')
+/**
+ * Output of a directory marked `"local": true` (in its metadata.json, inherited
+ * down the tree) goes here, NEVER into derived/: derived/ is the shipped tree, so
+ * an empty `publish` alone did not keep a conversion off the CDN. Gitignored.
+ */
+const LOCAL = join(ROOT, 'local')
 const CACHE = join(ROOT, '.cache')
 const PY = join(ROOT, 'bin', 'blender-export.py')
 const BLENDER =
@@ -96,15 +102,21 @@ type LibJob = {
   attribution: Record<string, string>
 }
 
-const jobs: { dir: string; specs: Spec[]; scale: number }[] = []
+const jobs: { dir: string; specs: Spec[]; scale: number; local: boolean }[] = []
 const libJobs: LibJob[] = []
 const ATTRIBUTION_FIELDS = ['copyright', 'credit', 'attribution', 'license', 'link'] as const
 
-const collect = (dir: string, attribution: Record<string, string> = {}) => {
+const collect = (
+  dir: string,
+  attribution: Record<string, string> = {},
+  localOnly = false
+) => {
   const mp = join(dir, 'metadata.json')
   let attr = attribution
+  let isLocal = localOnly
   if (existsSync(mp)) {
     const m = JSON.parse(readFileSync(mp, 'utf8'))
+    if (m.local === true) isLocal = true
     // Attribution overlays as you descend, exactly as it does for the response
     // headers in mirror.ts — so a library carries its pack's credit even though
     // the credit is declared several directories above the spec.
@@ -114,18 +126,20 @@ const collect = (dir: string, attribution: Record<string, string> = {}) => {
     if (Object.keys(local).length) attr = { ...attr, ...local }
     if (Array.isArray(m.convert) && m.convert.length)
       // pack-level `scale` (uniform factor) → applied to every model in the pack.
-      jobs.push({ dir, specs: m.convert, scale: Number(m.scale) || 1 })
+      jobs.push({ dir, specs: m.convert, scale: Number(m.scale) || 1, local: isLocal })
     // One directory can declare SEVERAL libraries — Quaternius' characters split
     // by style+gender to stay under the host's per-file limit — so accept either
     // a single spec or an array of them.
     for (const lib of Array.isArray(m.library) ? m.library : [m.library]) {
+      if (lib?.slug && lib?.from?.length && isLocal)
+        throw new Error(`${relative(SRC, dir)}: a library in a local directory would ship; not supported`)
       if (lib?.slug && lib?.from?.length)
         libJobs.push({ dir, spec: lib, attribution: attr })
     }
   }
   for (const n of readdirSync(dir)) {
     const p = join(dir, n)
-    if (statSync(p).isDirectory()) collect(p, attr)
+    if (statSync(p).isDirectory()) collect(p, attr, isLocal)
   }
 }
 if (existsSync(SRC)) collect(SRC)
@@ -133,7 +147,10 @@ if (existsSync(SRC)) collect(SRC)
 // A full run (no pack filter) regenerates the whole derived/ tree, so clear stale
 // outputs first — otherwise specs removed from metadata (e.g. shelved character
 // merges) would linger in derived/ and get mirrored past the excludes.
-if (!only) rmSync(DERIVED, { recursive: true, force: true })
+if (!only) {
+  rmSync(DERIVED, { recursive: true, force: true })
+  rmSync(LOCAL, { recursive: true, force: true })
+}
 
 const sig = (files: string[]) =>
   createHash('sha256')
@@ -193,7 +210,7 @@ type Task = {
   failed?: boolean
 }
 const tasks: Task[] = []
-for (const { dir, specs, scale } of jobs) {
+for (const { dir, specs, scale, local } of jobs) {
   const rel = relative(SRC, dir)
   if (only && !rel.includes(only)) continue
   for (const spec of specs) {
@@ -230,7 +247,7 @@ for (const { dir, specs, scale } of jobs) {
         ? ['merge', cacheGlb, ...inputs]
         : ['single', inputs[0], cacheGlb],
       cacheGlb,
-      outAbs: join(DERIVED, rel, spec.output),
+      outAbs: join(local ? LOCAL : DERIVED, rel, spec.output),
       cached: existsSync(cacheGlb),
     })
   }

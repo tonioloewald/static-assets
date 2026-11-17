@@ -26,3 +26,6 @@ derived/
 
 # local record of what this machine last deployed (see bin/publish.ts)
 .publish-state.json
+
+# Conversions of "local": true directories (never shipped)
+local/
